@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="GQ Build" default="build">
+
+    <target name="build" depends="prepare,lint">
+        <antcall target="style-php" />
+        <antcall target="pmd-php" />
+        <antcall target="cpd-php" />
+        <antcall target="phpunit" />
+        <antcall target="prepare-deployment" />
+    </target>
+
+    <target name="prepare" depends="clean" description="Prepare the code for build tasks">
+        <mkdir dir="${basedir}/build/coverage" />
+        <mkdir dir="${basedir}/build/logs" />
+        <mkdir dir="${basedir}/build/reports" />
+        <mkdir dir="${basedir}/build/release" />
+
+        <exec executable="composer">
+            <arg value="install" />
+            <arg value="--no-progress" />
+        </exec>
+    </target>
+
+    <target name="clean" description="Remove build artificats from previous run">
+        <delete dir="${basedir}/build/coverage" />
+        <delete dir="${basedir}/build/logs" />
+        <delete dir="${basedir}/build/reports" />
+        <delete dir="${basedir}/build/release" />
+    </target>
+
+    <target name="lint" description="Run all lint tasks">
+        <antcall target="lint-php" />
+    </target>
+
+    <target name="lint-php" description="Perform basic syntax check to see if PHP can parse the code">
+        <apply executable="php" failonerror="true">
+            <arg value="-l" />
+            <fileset dir="${basedir}/app">
+                <include name="**/*.php" />
+                <exclude name="lib/Merchant/**/*" />
+                <modified />
+            </fileset>
+        </apply>
+    </target>
+
+    <target name="style-php" description="Check that code conforms to the PSR-2 coding standard">
+        <exec executable="${basedir}/vendor/bin/phpcs" failonerror="false">
+            <arg line="--report=checkstyle
+				--report-file=${basedir}/build/logs/checkstyle-php.xml
+				--standard=PSR2
+				--ignore=app/config/*,app/start/*,app/database/**/*,*.blade.php,app/tests/**.*,app/Billing/database/**/*
+				app/" />
+        </exec>
+
+        <xslt in="${basedir}/build/logs/checkstyle-php.xml"
+              out="${basedir}/build/reports/checkstyle-php.html"
+              style="${basedir}/build/checkstyle-noframes-severity-sorted.xsl" />
+
+        <delete dir="${basedir}/files" />
+    </target>
+
+    <target name="style-javascript" description="Check that code conforms to the Crockford code standard" />
+
+    <target name="pmd-php" description="Run the php mess detector tool to check for potential errors">
+        <exec executable="${basedir}/vendor/bin/phpmd">
+            <arg line="app/ xml naming,controversial,codesize,unusedcode,design
+				--reportfile ${basedir}/build/logs/pmd-php.xml
+				--exclude ${basedir}/app/tests/*,${basedir}/app/config/*,${basedir}/app/start/*,${basedir}/app/database/*,*.blade.php,${basedir}/app/Billing/database/*
+				"/>
+        </exec>
+
+        <xslt in="${basedir}/build/logs/pmd-php.xml"
+              out="${basedir}/build/reports/pmd-php.html"
+              style="${basedir}/build/ag-pmd-report.xslt" />
+    </target>
+
+    <target name="cpd-php" description="Check for copy/pasted blocks of code within the PHP">
+        <exec executable="${basedir}/vendor/bin/phpcpd">
+            <arg line="app/
+				--log-pmd=${basedir}/build/logs/pmd-cpd-php.xml" />
+        </exec>
+
+        <xslt in="${basedir}/build/logs/pmd-cpd-php.xml"
+              out="${basedir}/build/reports/pmd-cpd-php.html"
+              style="${basedir}/build/cpdhtml.xslt" />
+    </target>
+
+    <target name="phpunit" description="Run the PHPUnit test suite configured in phpunit.xml">
+        <exec executable="${basedir}/vendor/bin/phpunit">
+            <arg line="--coverage-clover ${basedir}/build/coverage/coverage.xml
+				--coverage-html ${basedir}/build/coverage/html
+				--log-junit ${basedir}/build/logs/test-results/junit-php.xml" />
+        </exec>
+    </target>
+
+    <target name="prepare-deployment" description="Copy deployable artifacts to the release directory">
+
+        <copy todir="${basedir}/build/release" verbose="true">
+            <fileset dir="${basedir}">
+                <exclude name="build/" />
+                <exclude name="todo" />
+                <exclude name="vendor/" />
+            </fileset>
+        </copy>
+
+        <exec executable="composer" dir="${basedir}/build/release">
+            <arg value="install"/>
+            <arg value="--no-progress" />
+            <arg value="--no-dev" />
+        </exec>
+
+        <tar destfile="${basedir}/build/release.tar.gz" compression="gzip">
+            <tarfileset dir="${basedir}/build/release" />
+        </tar>
+
+        <delete dir="${basedir}/build/release" />
+
+    </target>
+
+</project>
