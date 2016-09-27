@@ -2,21 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Resolvers\SQSClientResolver;
+use Aws\Sqs\SqsClient;
+use Illuminate\Http\Request;
+
 class MessageQueueController extends Controller
 {
+    const QUEUE_URL = 'https://sqs.ap-southeast-2.amazonaws.com/187591088561/JemQue';
+
     /**
-     * Create a new controller instance.
-     *
-     * @return void
+     * @var SqsClient
      */
-    public function __construct()
+    private $sqs;
+
+    /**
+     * ExampleController constructor.
+     * @param SQSClientResolver $sqs
+     */
+    public function __construct(SQSClientResolver $sqs)
     {
-        //
+        $this->sqs = $sqs;
     }
 
-    public function create()
+    /**
+     * @param Request $request
+     */
+    public function create(Request $request)
     {
-        return 'jem';
+        $response = $this->sqs->client()->receiveMessage([
+            'QueueUrl' => self::QUEUE_URL,
+            'AttributeNames' => ['All'],
+            'MaxNumberOfMessages' => 10,
+        ]);
     }
-
 }
