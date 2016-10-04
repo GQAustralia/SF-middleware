@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncAllAwsSqsMessagesJob;
 use App\Resolvers\SQSClientResolver;
 use Aws\Sqs\SqsClient;
 use Illuminate\Http\Request;
@@ -29,10 +30,10 @@ class MessageQueueController extends Controller
      */
     public function create(Request $request)
     {
-        $response = $this->sqs->client()->receiveMessage([
+        /*$response = $this->sqs->client()->receiveMessage([
             'QueueUrl' => self::QUEUE_URL,
             'AttributeNames' => ['All'],
             'MaxNumberOfMessages' => 10,
-        ]);
+        ]);*/
     }
 }
