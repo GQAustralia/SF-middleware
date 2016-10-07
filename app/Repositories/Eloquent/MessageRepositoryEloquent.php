@@ -6,10 +6,13 @@ use App\Message;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Repositories\Exceptions\DuplicateRecordsException;
 use App\Repositories\Exceptions\FailedSyncManyToMany;
-use App\Subscriber;
+use App\Resolvers\InsertIgnoreBulkMySqlResolver;
+use Illuminate\Support\Facades\DB;
 
 class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRepositoryInterface
 {
+    use InsertIgnoreBulkMySqlResolver;
+
     /**
      * @var Message
      */
@@ -65,5 +68,17 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
         $message->subscriber()->sync($input);
 
         return $message;
+    }
+
+    /**
+     * @param array $messages
+     * @return int
+     */
+    public function insertIgnoreBulk(array $messages)
+    {
+        $insertFields = ['message_id', 'queue_id', 'message_content', 'completed'];
+        $query = $this->resolve('message', $insertFields, $messages);
+
+        return DB::affectingStatement($query);
     }
 }

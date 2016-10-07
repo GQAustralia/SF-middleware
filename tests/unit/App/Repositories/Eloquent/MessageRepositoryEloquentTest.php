@@ -173,4 +173,42 @@ class MessageRepositoryEloquentTest extends BaseTestCase
 
         $this->repository->attachSubscriber(new Message(), $input);
     }
+
+    /**
+     * @test
+     */
+    public function it_returns_total_numbers_of_inserted_rows_on_each_insert()
+    {
+        $this->setConnection('test_mysql_database');
+
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class, 2)->make(['queue_id' => $queue->id]);
+
+        $result = $this->repository->insertIgnoreBulk($message->toArray());
+
+        $this->assertEquals(2, $result);
+        $this->assertMultipleSeeInDatabase('message', $message);
+    }
+
+    /** @test */
+    public function it_returns_zero_when_no_insert_has_been_made()
+    {
+        $this->setConnection('test_mysql_database');
+
+        $queue = factory(Queue::class)->create();
+        $existingMessage = factory(Message::class, 2)->create(['queue_id' => $queue->id]);
+
+        $result = collect($existingMessage)->map(function ($message) use ($queue) {
+            return factory(Message::class)->make([
+                'queue_id' => $queue->id,
+                'message_id' => $message->message_id
+            ])->toArray();
+        })->toArray();
+
+        $result = $this->repository->insertIgnoreBulk($result);
+
+        $this->assertEquals(0, $result);
+        $this->assertMultipleSeeInDatabase('message', $existingMessage);
+
+    }
 }

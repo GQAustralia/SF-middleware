@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Laravel\Lumen\Testing\DatabaseMigrations;
 use Laravel\Lumen\Testing\DatabaseTransactions;
 
@@ -49,5 +50,30 @@ class BaseTestCase extends TestCase
         foreach ($keys as $key) {
             $this->assertEquals($expected[$key], $actual[$key]);
         }
+    }
+
+    /**
+     * @param string $table
+     * @param array|object $expected
+     */
+    protected function assertMultipleSeeInDatabase($table, $expected)
+    {
+        if (is_object($expected)) {
+            $expected = json_decode(json_encode($expected), true);
+        }
+        foreach ($expected as $expect) {
+            $this->seeInDatabase($table, $expect);
+        }
+    }
+
+    /**
+     * @param string $database
+     * @param array $migrationParameters
+     */
+    protected function setConnection($database, $migrationParameters = [])
+    {
+        DB::setDefaultConnection($database);
+
+        $this->artisan('migrate', $migrationParameters);
     }
 }
