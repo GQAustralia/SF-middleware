@@ -5,6 +5,7 @@ use App\Queue;
 use App\Resolvers\SQSClientResolver;
 use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
+use Illuminate\Support\Facades\Schema;
 
 class MessageQueueControllerTest extends BaseTestCase
 {
@@ -19,6 +20,8 @@ class MessageQueueControllerTest extends BaseTestCase
         parent::setUp();
 
         $this->sqs = new SQSClientResolver();
+
+        $this->SET_UP_SQS();
     }
 
     /**
@@ -27,6 +30,7 @@ class MessageQueueControllerTest extends BaseTestCase
      * To create will wait 60secs after delete.
      * Important this test must be always placed on top of all tests.
      *
+     * @coversNothing
      * @test
      */
     public function SET_UP_SQS()
@@ -81,11 +85,30 @@ class MessageQueueControllerTest extends BaseTestCase
     /** @test */
     public function it_returns_an_invalid_response_on_database_query_errors()
     {
+        $this->setConnection('test_mysql_database');
+
         $this->artisan('migrate:rollback');
 
         $this->post('sync');
 
         $this->assertEquals('Database error please contact your Administrator.', $this->getContent());
+        $this->assertResponseStatus(500);
+    }
+
+    /** @test */
+    public function it_returns_an_invalid_response_on_database_insert_error()
+    {
+        $this->setConnection('test_mysql_database');
+
+        factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+
+        Schema::table('message', function ($table) {
+            $table->dropColumn('message_id');
+        });
+
+        $this->post('sync');
+
+        $this->assertEquals('Insert Ignore Bulk Error.', $this->getContent());
         $this->assertResponseStatus(500);
     }
 
@@ -107,6 +130,7 @@ class MessageQueueControllerTest extends BaseTestCase
      * Deletes the newly created SQS Que and its messages.
      * This test should be placed always at the bottom of each tests.
      *
+     * @coversNothing
      */
     public function RESET_SQS()
     {

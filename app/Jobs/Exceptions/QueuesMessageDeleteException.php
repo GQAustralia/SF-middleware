@@ -2,7 +2,7 @@
 
 namespace App\Jobs\Exceptions;
 
-class InsertBulkMessageException extends \Exception
+class QueuesMessageDeleteException extends \Exception
 {
     //
 }
