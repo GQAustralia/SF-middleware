@@ -2,38 +2,59 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\Exceptions\AWSSQSServerException;
+use App\Jobs\Exceptions\EmptyQueuesException;
+use App\Jobs\Exceptions\InsertIgnoreBulkException;
+use App\Jobs\Exceptions\NoMessagesToSyncException;
+use App\Jobs\Exceptions\QueuesMessageDeleteException;
 use App\Jobs\SyncAllAwsSqsMessagesJob;
-use App\Resolvers\SQSClientResolver;
-use Aws\Sqs\SqsClient;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Laravel\Lumen\Http\ResponseFactory;
 
 class MessageQueueController extends Controller
 {
-    const QUEUE_URL = 'https://sqs.ap-southeast-2.amazonaws.com/187591088561/JemQue';
+    const DATABASE_ERROR_MESSAGE = 'Database error please contact your Administrator.';
+    const SYNC_SUCCESS = 'Sync Successful.';
 
     /**
-     * @var SqsClient
+     * @var ResponseFactory
      */
-    private $sqs;
+    protected $responseFactory;
 
     /**
-     * ExampleController constructor.
-     * @param SQSClientResolver $sqs
+     * MessageQueueController constructor.
+     * @param ResponseFactory $responseFactory
      */
-    public function __construct(SQSClientResolver $sqs)
+    public function __construct(ResponseFactory $responseFactory)
     {
-        $this->sqs = $sqs;
+        $this->responseFactory = $responseFactory;
     }
 
     /**
      * @param Request $request
+     * @return \Illuminate\Http\Response
      */
-    public function create(Request $request)
+    public function sync(Request $request)
     {
-        /*$response = $this->sqs->client()->receiveMessage([
-            'QueueUrl' => self::QUEUE_URL,
-            'AttributeNames' => ['All'],
-            'MaxNumberOfMessages' => 10,
-        ]);*/
+        try {
+            $this->dispatch(new SyncAllAwsSqsMessagesJob());
+        } catch (EmptyQueuesException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
+        } catch (AWSSQSServerException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
+        } catch (NoMessagesToSyncException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::SUCCESS_STATUS_CODE);
+        } catch (InsertIgnoreBulkException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::INTERNAL_SERVER_ERROR_STATUS_CODE);
+        } // @codeCoverageIgnoreStart
+        catch (QueuesMessageDeleteException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::INTERNAL_SERVER_ERROR_STATUS_CODE);
+            // @codeCoverageIgnoreEnd
+        } catch (QueryException $exc) {
+            return $this->responseFactory->make(self::DATABASE_ERROR_MESSAGE, self::INTERNAL_SERVER_ERROR_STATUS_CODE);
+        }
+
+        return $this->responseFactory->make(self::SYNC_SUCCESS, self::SUCCESS_STATUS_CODE);
     }
 }

@@ -12,4 +12,10 @@ interface MessageRepositoryInterface extends RepositoryInterface
      * @return mixed
      */
     public function attachSubscriber(Message $message, array $input);
+
+    /**
+     * @param array $insertUpdateBulk
+     * @return mixed
+     */
+    public function insertIgnoreBulk(array $insertUpdateBulk);
 }
