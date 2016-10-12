@@ -4,7 +4,6 @@ use App\Jobs\Exceptions\AWSSQSServerException;
 use App\Jobs\Exceptions\EmptyQueuesException;
 use App\Jobs\Exceptions\InsertIgnoreBulkException;
 use App\Jobs\Exceptions\NoMessagesToSyncException;
-use App\Jobs\Exceptions\QueuesMessageDeleteException;
 use App\Jobs\SyncAllAwsSqsMessagesJob;
 use App\Queue;
 use App\Resolvers\SQSClientResolver;
@@ -52,7 +51,6 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
                 'QueueUrl' => $queueURL,
                 'MessageBody' => self::QUEUE_MESSAGE_SAMPLE
             ));
-
 
         } catch (SqsException $exception) {
             echo "ERROR: SET_UP_SQS method" . PHP_EOL;
@@ -121,10 +119,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
-        $message = $this->sqs->client()->receiveMessage([
-            'QueueUrl' => $queueUrl,
-            'VisibilityTimeout' => 2
-        ])->get('Messages');
+        $this->sqs->client()->receiveMessage(['QueueUrl' => $queueUrl, 'VisibilityTimeout' => 2])->get('Messages');
 
         sleep(7);
 
@@ -155,39 +150,8 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob());
 
-        $this->seeInDatabase('message', [
-            'message_id' => $message['MessageId'],
-            'queue_id' => $queue->id,
-            'message_content' => $message['Body'],
-            'completed' => 'N'
-        ]);
-    }
-
-    /** @test */
-    public function it_deletes_the_sqs_messages_on_amazon_after_storing_to_database()
-    {
-        $this->setConnection('test_mysql_database');
-
         sleep(7);
 
-        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
-        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
-        $message = $this->sqs->client()->receiveMessage([
-            'QueueUrl' => $queueUrl,
-            'VisibilityTimeout' => 2
-        ])->get('Messages');
-
-        $message = array_first($message);
-
-        sleep(10);
-
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', 30));
-
-        sleep(30);
-
-        $existingMessages = $this->sqs->client()->receiveMessage(['QueueUrl' => $queueUrl])->get('Messages');
-
-        $this->assertEmpty($existingMessages);
         $this->seeInDatabase('message', [
             'message_id' => $message['MessageId'],
             'queue_id' => $queue->id,

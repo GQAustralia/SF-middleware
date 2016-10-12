@@ -6,7 +6,6 @@ use App\Jobs\Exceptions\AWSSQSServerException;
 use App\Jobs\Exceptions\EmptyQueuesException;
 use App\Jobs\Exceptions\InsertIgnoreBulkException;
 use App\Jobs\Exceptions\NoMessagesToSyncException;
-use App\Jobs\Exceptions\QueuesMessageDeleteException;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Repositories\Contracts\QueueRepositoryInterface;
 use App\Repositories\Eloquent\MessageRepositoryEloquent;
@@ -52,10 +51,6 @@ class SyncAllAwsSqsMessagesJob extends Job
 
         $insertPayload = $this->buildMessagePayloadForInsert($queueMessages);
         $this->insertBulkMessagesOrFail($message, $insertPayload);
-
-        $this->deleteQueueMessagesGroupByQueueUrl($sqs, $queueMessages);
-
-        //@todo fire event to send
     }
 
     /**
@@ -70,40 +65,6 @@ class SyncAllAwsSqsMessagesJob extends Job
         } catch (QueryException $exception) {
             throw new InsertIgnoreBulkException('Insert Ignore Bulk Error.');
         }
-    }
-
-    /**
-     * @param SQSClientResolver $sqs
-     * @param array $queueMessages
-     */
-    private function deleteQueueMessagesGroupByQueueUrl(SQSClientResolver $sqs, $queueMessages)
-    {
-        $messagesGroupByQueue = collect($queueMessages)->groupBy('queue_url')->toArray();
-
-        collect($messagesGroupByQueue)->each(function ($messages, $queueUrl) use ($sqs) {
-            $this->deleteAllQueueMessages($sqs, $queueUrl, $messages);
-        });
-    }
-
-    /**
-     * @param SQSClientResolver $sqs
-     * @param string $queueUrl
-     * @param array $messages
-     * @throws QueuesMessageDeleteException
-     */
-    private function deleteAllQueueMessages(SQSClientResolver $sqs, $queueUrl, $messages)
-    {
-        try {
-            $receiptHandles = collect($messages)->pluck('ReceiptHandle')->toArray();
-
-            collect($receiptHandles)->each(function ($receiptHandle) use ($queueUrl, $sqs) {
-                $sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle]);
-            });
-
-        } // @codeCoverageIgnoreStart
-        catch (SqsException $exception) {
-            throw new QueuesMessageDeleteException($this->extractSQSMessage($exception->getMessage()));
-        }// @codeCoverageIgnoreEnd
     }
 
     /**
