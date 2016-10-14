@@ -134,26 +134,27 @@ class MessageRepositoryEloquentTest extends BaseTestCase
         $message = factory(Message::class)->create(['queue_id' => $queue->id]);
         $subscribers = factory(Subscriber::class, 4)->create();
 
-        $input = collect($subscribers)->map(function ($subscriber) {
-            return [$subscriber->id => ['status' => 'sent']];
-        })->flatten(1)->toArray();
+        $subscriberAttachInput = collect([]);
 
-        $result = $this->repository->attachSubscriber($message, $input);
+        foreach ($subscribers as $subscriber) {
+            $subscriberAttachInput->put($subscriber->id, ['status' => 'Y']);
+        }
 
-        $this->seeInDatabase('sent_message', [
-            'message_id' => $message->id,
-            'subscriber_id' => $subscribers[0]->id
-        ]);
-        $this->assertEquals(3, count($result->subscriber));
+        $result = $this->repository->attachSubscriber($message, $subscriberAttachInput->toArray());
+
+        $this->assertMultipleSeeInDatabase('sent_message', $subscriberAttachInput->toArray());
+
+        $this->assertEquals(4, count($result->subscriber));
         $this->assertInstanceOf(Collection::class, $result->subscriber);
         $this->assertInstanceOf(Subscriber::class, $result->subscriber[0]);
         $this->assertInstanceOf(Message::class, $result);
     }
 
     /** @test */
-    public function it_throws_exception_on_attach_subscriber_when_input_is_empty()
+    public function it_throws_exception_on_attach_subscriber_when_input_subscriber_is_empty()
     {
         $this->expectException(FailedSyncManyToMany::class);
+        $this->expectExceptionMessage('Subscribers does not exist.');
 
         $queue = factory(Queue::class)->create();
         $message = factory(Message::class)->create(['queue_id' => $queue->id]);
@@ -165,6 +166,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     public function it_throws_exception_on_attach_subscriber_when_message_does_not_exist()
     {
         $this->expectException(FailedSyncManyToMany::class);
+        $this->expectExceptionMessage('Message does not exist.');
 
         $subscribers = factory(Subscriber::class, 2)->create();
         $input = collect($subscribers)->map(function ($subscriber) {
@@ -209,6 +211,45 @@ class MessageRepositoryEloquentTest extends BaseTestCase
 
         $this->assertEquals(0, $result);
         $this->assertMultipleSeeInDatabase('message', $existingMessage);
+    }
 
+    /** @test */
+    public function it_returns_a_collection_of_message_when_searched_using_wherein()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class, 5)->create(['queue_id' => $queue->id]);
+
+        $messageIds = collect($message->toArray())->pluck('message_id');
+
+        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['queue']);
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertInstanceOf(Message::class, $result[0]);
+    }
+
+    /** @test */
+    public function it_returns_a_list_of_subscribers_to_each_message_when_using_wherein()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class, 5)->create(['queue_id' => $queue->id]);
+        $subscriber = factory(Subscriber::class, 5)->create();
+        $subscriberIds = collect($subscriber)->pluck('id')->toArray();
+
+        $queue->subscriber()->attach($subscriberIds);
+
+        $messageIds = collect($message->toArray())->pluck('message_id');
+
+        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['queue']);
+
+        $this->assertInstanceOf(Queue::class, $result[0]->queue);
+        $this->assertInstanceOf(Subscriber::class, $result[0]->queue->subscriber[0]);
+    }
+
+    /** @test */
+    public function it_returns_an_empty_collection_on_using_wherein_when_message_id_does_not_exist()
+    {
+        $result = $this->repository->findAllWhereIn('message_id', [], ['queue']);
+
+        $this->assertEmpty($result);
     }
 }

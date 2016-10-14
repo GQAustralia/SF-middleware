@@ -18,4 +18,12 @@ interface MessageRepositoryInterface extends RepositoryInterface
      * @return mixed
      */
     public function insertIgnoreBulk(array $insertUpdateBulk);
+
+    /**
+     * @param string $attribute
+     * @param array $value
+     * @param array $with
+     * @return mixed
+     */
+    public function findAllWhereIn($attribute, $value, $with = []);
 }

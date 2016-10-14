@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Resolvers;
+namespace App\Services;
 
 interface AWSClientInterface
 {

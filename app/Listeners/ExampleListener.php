@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\ExampleEvent;
+use App\Message;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -15,7 +16,7 @@ class ExampleListener
      */
     public function __construct()
     {
-        //
+
     }
 
     /**
@@ -26,6 +27,6 @@ class ExampleListener
      */
     public function handle(ExampleEvent $event)
     {
-        //
+        factory(Message::class)->create(['queue_id' => 1, 'message_content' => 'jemjemjem']);
     }
 }

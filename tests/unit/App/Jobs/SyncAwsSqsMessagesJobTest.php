@@ -1,12 +1,14 @@
 <?php
 
 use App\Jobs\Exceptions\AWSSQSServerException;
+use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
 use App\Jobs\Exceptions\EmptyQueuesException;
 use App\Jobs\Exceptions\InsertIgnoreBulkException;
 use App\Jobs\Exceptions\NoMessagesToSyncException;
 use App\Jobs\SyncAllAwsSqsMessagesJob;
+use App\Message;
 use App\Queue;
-use App\Resolvers\SQSClientResolver;
+use App\Services\SQSClientService;
 use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -26,7 +28,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     {
         parent::setUp();
 
-        $this->sqs = new SQSClientResolver();
+        $this->sqs = new SQSClientService();
         $this->dispatcher = $this->app->make(Dispatcher::class);
 
         $this->SET_UP_SQS();
@@ -109,6 +111,33 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     }
 
     /** @test */
+    public function it_throws_an_exception_when_database_is_already_sync_to_sqs()
+    {
+        $this->setConnection('test_mysql_database');
+
+        $this->expectException(DatabaseAlreadySyncedException::class);
+        $this->expectExceptionMessage('Database already synced.');
+
+        sleep(15);
+
+        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+
+        while ($availableMessage = $this->getAQueueMessage($queueUrl)) {
+            factory(Message::class)->create([
+                'message_id' => $availableMessage['MessageId'],
+                'queue_id' => $queue->id,
+                'message_content' => $availableMessage['Body'],
+                'completed' => 'N'
+            ]);
+        }
+
+        sleep(30);
+
+        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', 30));
+    }
+
+    /** @test */
     public function it_throws_an_error_on_saving_to_database_if_any_database_related_exception_occurs()
     {
         $this->expectException(InsertIgnoreBulkException::class);
@@ -133,25 +162,31 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     /** @test */
     public function it_stores_aws_queues_messages_to_messages_table()
     {
+        $this->withoutEvents();
         $this->setConnection('test_mysql_database');
 
         sleep(15);
 
         $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+        $queueAttributes = $this->sqs->client()->getQueueAttributes([
+            'QueueUrl' => $queueUrl,
+            'AttributeNames' => ['ApproximateNumberOfMessages']
+        ]);
         $message = $this->sqs->client()->receiveMessage([
             'QueueUrl' => $queueUrl,
             'VisibilityTimeout' => 2
         ])->get('Messages');
 
-        sleep(7);
+        sleep(15);
 
         $message = array_first($message);
 
         $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob());
 
-        sleep(7);
+        sleep(10);
 
+        $this->assertEquals($queueAttributes['Attributes']['ApproximateNumberOfMessages'], Message::all()->count());
         $this->seeInDatabase('message', [
             'message_id' => $message['MessageId'],
             'queue_id' => $queue->id,
@@ -192,5 +227,18 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $message = explode('</Message>', $message[1]);
 
         return reset($message);
+    }
+
+    /**
+     * @param string $url
+     * @return mixed
+     */
+    private function getAQueueMessage($url, $visibilityTimeout = 30)
+    {
+        $message = $this->sqs->client()
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
+            ->get('Messages');
+
+        return array_first($message);
     }
 }

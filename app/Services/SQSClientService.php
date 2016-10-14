@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Resolvers;
+namespace App\Services;
 
+use App\Resolvers\ProvidesAWSConnectionParameters;
 use Aws\Sqs\SqsClient;
 
-class SQSClientResolver implements AWSClientInterface
+class SQSClientService implements AWSClientInterface
 {
     use ProvidesAWSConnectionParameters;
 

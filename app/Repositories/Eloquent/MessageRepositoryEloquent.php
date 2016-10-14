@@ -61,11 +61,15 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
      */
     public function attachSubscriber(Message $message, array $input)
     {
-        if (!$message->toArray() || !($input)) {
-            throw new FailedSyncManyToMany();
+        if (empty($message->toArray())) {
+            throw new FailedSyncManyToMany('Message does not exist.');
         }
 
-        $message->subscriber()->sync($input);
+        if (empty($input)) {
+            throw new FailedSyncManyToMany('Subscribers does not exist.');
+        }
+
+        $message->subscriber()->syncWithoutDetaching($input);
 
         return $message;
     }
@@ -80,5 +84,16 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
         $query = $this->resolve('message', $insertFields, $messages);
 
         return DB::affectingStatement($query);
+    }
+
+    /**
+     * @param string $attribute
+     * @param array $value
+     * @param array $with
+     * @return Message
+     */
+    public function findAllWhereIn($attribute, $value, $with = [])
+    {
+        return $this->message->with($with)->whereIn($attribute, $value)->get();
     }
 }

@@ -1,8 +1,9 @@
 <?php
 
-
+use App\Message;
 use App\Queue;
-use App\Resolvers\SQSClientResolver;
+use App\Services\SQSClientService;
+use App\Subscriber;
 use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
 use Illuminate\Support\Facades\Schema;
@@ -19,7 +20,7 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         parent::setUp();
 
-        $this->sqs = new SQSClientResolver();
+        $this->sqs = new SQSClientService();
 
         $this->SET_UP_SQS();
     }
@@ -96,6 +97,34 @@ class MessageQueueControllerTest extends BaseTestCase
     }
 
     /** @test */
+    public function it_returns_a_valid_response_on_already_synced_database_and_sqs()
+    {
+        $this->setConnection('test_mysql_database');
+
+        sleep(15);
+
+        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+
+        while ($availableMessage = $this->getAQueueMessage($queueUrl, 30)) {
+            factory(\App\Message::class)->create([
+                'message_id' => $availableMessage['MessageId'],
+                'queue_id' => $queue->id,
+                'message_content' => $availableMessage['Body'],
+                'completed' => 'N'
+            ]);
+        }
+
+        sleep(30);
+
+        $this->post('sync');
+
+        sleep(10);
+
+        $this->assertEquals('Database already synced.', $this->getContent());
+    }
+
+    /** @test */
     public function it_returns_an_invalid_response_on_database_insert_error()
     {
         $this->setConnection('test_mysql_database');
@@ -108,8 +137,21 @@ class MessageQueueControllerTest extends BaseTestCase
 
         $this->post('sync');
 
-        $this->assertEquals('Insert Ignore Bulk Error.', $this->getContent());
+        sleep(10);
+
         $this->assertResponseStatus(500);
+    }
+
+    /** @test */
+    public function it_throws_an_invalid_response_on_when_queue_in_messages_does_not_have_an_associated_subscriber()
+    {
+        $this->setConnection('test_mysql_database');
+
+        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+
+        $this->post('sync');
+
+        $this->assertResponseStatus(400);
     }
 
     /** @test */
@@ -118,6 +160,9 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->setConnection('test_mysql_database');
 
         $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+        $message = factory(Message::class, 1)->create(['queue_id' => $queue->id]);
+        $subscriber = factory(Subscriber::class, 3)->create();
+        $queue->subscriber()->attach(collect($subscriber)->pluck('id')->toArray());
 
         $this->post('sync');
 
@@ -158,5 +203,18 @@ class MessageQueueControllerTest extends BaseTestCase
         $message = explode('</Message>', $message[1]);
 
         return reset($message);
+    }
+
+    /**
+     * @param string $url
+     * @return mixed
+     */
+    private function getAQueueMessage($url, $visibilityTimtout = 15)
+    {
+        $message = $this->sqs->client()
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimtout])
+            ->get('Messages');
+
+        return array_first($message);
     }
 }

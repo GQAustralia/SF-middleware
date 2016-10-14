@@ -12,8 +12,8 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        'App\Events\SqsMessagesWasSyncedEvent' => [
-            'App\Listeners\EventListener'
+        'App\Events\SqsMessagesWasSynced' => [
+            'App\Listeners\ProcessSyncedMessages'
         ],
     ];
 }
