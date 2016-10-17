@@ -12,5 +12,16 @@
 */
 
 $app->post('sync', [
-    'as' => 'sync', 'uses' => 'MessageQueueController@sync'
+    'as' => 'sync',
+    'uses' => 'MessageQueueController@sync'
+]);
+
+$app->post('example-response/success', [
+    'as' => 'example-response/success',
+    'uses' => 'ExampleResponseController@success'
+]);
+
+$app->post('example-response/failed', [
+    'as' => 'example-response/failed',
+    'uses' => 'ExampleResponseController@failed'
 ]);

@@ -8,7 +8,6 @@ use App\Jobs\Exceptions\EmptyQueuesException;
 use App\Jobs\Exceptions\InsertIgnoreBulkException;
 use App\Jobs\Exceptions\NoMessagesToSyncException;
 use App\Jobs\SyncAllAwsSqsMessagesJob;
-use App\Repositories\Exceptions\FailedSyncManyToMany;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Laravel\Lumen\Http\ResponseFactory;
@@ -50,8 +49,6 @@ class MessageQueueController extends Controller
             return $this->responseFactory->make($exc->getMessage(), self::SUCCESS_STATUS_CODE);
         } catch (InsertIgnoreBulkException $exc) {
             return $this->responseFactory->make($exc->getMessage(), self::INTERNAL_SERVER_ERROR_STATUS_CODE);
-        } catch (FailedSyncManyToMany $exc) {
-            return $this->responseFactory->make(self::DATABASE_ERROR_MESSAGE, self::BAD_REQUEST_STATUS_CODE);
         } catch (QueryException $exc) {
             return $this->responseFactory->make(self::DATABASE_ERROR_MESSAGE, self::INTERNAL_SERVER_ERROR_STATUS_CODE);
         }

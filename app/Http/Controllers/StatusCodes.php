@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Laravel\Lumen\Routing\Controller as BaseController;
-
-abstract class StatusCodes extends BaseController
+interface StatusCodes
 {
     const SUCCESS_STATUS_CODE = 200;
     const BAD_REQUEST_STATUS_CODE = 400;

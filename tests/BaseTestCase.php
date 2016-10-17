@@ -67,6 +67,20 @@ class BaseTestCase extends TestCase
     }
 
     /**
+     * @param string $table
+     * @param array|object $expected
+     */
+    protected function assertMultipleNotSeeInDatabase($table, $expected)
+    {
+        if (is_object($expected)) {
+            $expected = json_decode(json_encode($expected), true);
+        }
+        foreach ($expected as $expect) {
+            $this->notSeeInDatabase($table, $expect);
+        }
+    }
+
+    /**
      * @param string $database
      * @param array $migrationParameters
      */

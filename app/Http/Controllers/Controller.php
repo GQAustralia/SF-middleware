@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-class Controller extends StatusCodes
+use Laravel\Lumen\Routing\Controller as BaseController;
+
+class Controller extends BaseController implements StatusCodes
 {
     //
 }

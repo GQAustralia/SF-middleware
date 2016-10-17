@@ -61,7 +61,7 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
      */
     public function attachSubscriber(Message $message, array $input)
     {
-        if (empty($message->toArray())) {
+        if (empty($message->id)) {
             throw new FailedSyncManyToMany('Message does not exist.');
         }
 

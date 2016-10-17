@@ -107,7 +107,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE]);
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob());
+        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
     }
 
     /** @test */
@@ -156,7 +156,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             $table->dropColumn('message_id');
         });
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob());
+        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
     }
 
     /** @test */
@@ -182,7 +182,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $message = array_first($message);
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob());
+        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
 
         sleep(10);
 

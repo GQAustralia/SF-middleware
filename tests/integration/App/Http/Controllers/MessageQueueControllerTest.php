@@ -143,7 +143,7 @@ class MessageQueueControllerTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_throws_an_invalid_response_on_when_queue_in_messages_does_not_have_an_associated_subscriber()
+    public function it_returns_a_valid_response_on_when_queue_in_messages_does_not_have_an_associated_subscriber()
     {
         $this->setConnection('test_mysql_database');
 
@@ -151,7 +151,9 @@ class MessageQueueControllerTest extends BaseTestCase
 
         $this->post('sync');
 
-        $this->assertResponseStatus(400);
+        sleep(10);
+
+        $this->assertResponseOk();
     }
 
     /** @test */

@@ -3,24 +3,36 @@
 namespace App\Listeners;
 
 use App\Events\SqsMessagesWasSynced;
-use App\Message;
+use App\Http\Controllers\StatusCodes;
 use App\Repositories\Contracts\MessageRepositoryInterface;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Collection;
 
-class ProcessSyncedMessages implements ShouldQueue
+class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 {
+    const SENT = 'sent';
+    const FAILED = 'failed';
+
     /**
      * @var MessageRepositoryInterface
      */
-    private $message;
+    protected $message;
+
+    /**
+     * @var GuzzleClient
+     */
+    protected $guzzleClient;
 
     /**
      * SqsMessagesWasSyncedEventListener constructor.
      * @param MessageRepositoryInterface $message
+     * @param GuzzleClient $guzzleClient
      */
-    public function __construct(MessageRepositoryInterface $message)
+    public function __construct(MessageRepositoryInterface $message, GuzzleClient $guzzleClient)
     {
         $this->message = $message;
+        $this->guzzleClient = $guzzleClient;
     }
 
     /**
@@ -31,32 +43,94 @@ class ProcessSyncedMessages implements ShouldQueue
     {
         $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['queue']);
 
-        return $result = collect($messages)->map(function ($message) {
-            $this->message->attachSubscriber($message, $this->buildAttachInputAndSendMessageToSubscriber($message));
-        })->toArray();
+        return collect($messages)->each(function ($message) {
+            if (!empty($message->queue->subscriber->count())) {
+                $this->message->attachSubscriber(
+                    $message,
+                    $this->buildAttachInput($message->queue->subscriber, $message->content)->toArray()
+                );
+            }
+        });
     }
 
     /**
-     * @param Message $message
-     * @return array
+     * @param Collection $subscribers
+     * @param $messageContent
+     * @return \Illuminate\Support\Collection
      */
-    private function buildAttachInputAndSendMessageToSubscriber(Message $message)
+    private function buildAttachInput(Collection $subscribers, $messageContent)
     {
         $subscriberAttachInput = collect([]);
 
-        collect($message->queue->subscriber)->each(function ($subscriber) use ($subscriberAttachInput, $message) {
+        collect($subscribers)->each(function ($subscriber) use ($subscriberAttachInput, $messageContent) {
+
+            $formParams = $this->unserializeMessageContent($messageContent);
+
             $subscriberAttachInput->put(
                 $subscriber->id,
-                ['status' => $this->sendMessageToSubscriber($subscriber->url, $message->content)]
+                ['status' => $this->getUrlStatus($subscriber->url, $formParams)]
             );
         });
 
-        return $subscriberAttachInput->toArray();
+        return $subscriberAttachInput;
     }
 
-    private function sendMessageToSubscriber($url, $content)
+    /**
+     * @param string $url
+     * @param array $formParams
+     * @return string
+     */
+    public function getUrlStatus($url, $formParams)
     {
-        return 'Y';
+        $urlStatus = self::FAILED;
+
+        if ($this->guardIsValidUrl($url)) {
+            $urlStatus = $this->sendMessageToSubscriber($url, $formParams);
+        }
+
+        return $urlStatus;
+    }
+
+    /**
+     * @param string $message
+     * @return array
+     */
+    private function unserializeMessageContent($message)
+    {
+        //@todo UnserialzeMessage
+
+        return $options = array_merge(['http_errors' => false], []);
+    }
+
+    /**
+     * @param string $url
+     * @param array $options
+     * @return string
+     */
+    private function sendMessageToSubscriber($url, $options = [])
+    {
+        $result = $this->guzzleClient->post($url, $options);
+
+        if ($result->getStatusCode() === self::SUCCESS_STATUS_CODE) {
+            return self::SENT;
+        }
+
+        return self::FAILED;
+    }
+
+    /**
+     * @param string $url
+     * @return bool
+     */
+    private function guardIsValidUrl($url)
+    {
+        $file_headers = @get_headers($url);
+
+        if (!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') {
+            return false;
+        }
+
+        return true;
     }
 
 }

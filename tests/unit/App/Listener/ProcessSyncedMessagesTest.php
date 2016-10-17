@@ -9,6 +9,9 @@ use App\Subscriber;
 
 class ProcessSyncedMessagesTest extends BaseTestCase
 {
+    const SUCCESS_RESPONSE_SITE = 'http://gq-message-queuing-service.dev/example-response/success';
+    const UNSUCCESSFUL_RESPONSE_SITE = 'http://gq-message-queuing-service.dev/example-response/failed';
+
     /**
      * @var MessageRepositoryEloquent
      */
@@ -31,15 +34,15 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_stores_to_database_the_sent_messages_result_on_success()
+    public function it_sets_status_sent_on_successful_message_sent_to_subscriber()
     {
-        $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced();
+        $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced(['url' => url(self::SUCCESS_RESPONSE_SITE)]);
 
         $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['queue']);
         $subscriberAttachInput = collect([]);
         foreach ($messages as $message) {
             foreach ($message->queue->subscriber as $subscriber) {
-                $subscriberAttachInput->put($subscriber->id, ['status' => 'Y']);
+                $subscriberAttachInput->put($subscriber->id, ['status' => 'sent']);
             }
         }
 
@@ -48,7 +51,73 @@ class ProcessSyncedMessagesTest extends BaseTestCase
         $this->assertMultipleSeeInDatabase('sent_message', $subscriberAttachInput->toArray());
     }
 
-    private function prepareInstanceOfSqsMessageWasSynced()
+    /** @test */
+    public function it_sets_status_failed_to_unsuccessful_message_sent_to_subscriber()
+    {
+        $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced(['url' => url(self::UNSUCCESSFUL_RESPONSE_SITE)]);
+
+        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['queue']);
+        $subscriberAttachInput = collect([]);
+        foreach ($messages as $message) {
+            foreach ($message->queue->subscriber as $subscriber) {
+                $subscriberAttachInput->put($subscriber->id, ['status' => 'failed']);
+            }
+        }
+
+        $this->listener->handle($eventInstance);
+
+        $this->assertMultipleSeeInDatabase('sent_message', $subscriberAttachInput->toArray());
+    }
+
+    /** @test */
+    public function it_sets_status_failed_when_subscriber_url_is_invalid()
+    {
+        $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced(['url' => url('http://nonExistingUrl.com')]);
+        $subscriberAttachInput = $this->buildToAssertIfEqualMessageInput($eventInstance->messageIdList, 'failed');
+
+        $this->listener->handle($eventInstance);
+
+        $this->assertMultipleSeeInDatabase('sent_message', $subscriberAttachInput->toArray());
+    }
+
+    /** @test */
+    public function it_does_not_add_to_attach_if_there_is_no_associated_subscriber_on_message_queue()
+    {
+        $firstQueue = factory(Queue::class)->create();
+        $secondQueue = factory(Queue::class)->create();
+        $messagesOnFirstQueue = factory(Message::class, 5)->create(['queue_id' => $firstQueue->id]);
+        $messagesOnSecondQueue = factory(Message::class, 5)->create(['queue_id' => $secondQueue->id]);
+        $subscriberOne = factory(Subscriber::class, 3)->create(['url' => url(self::SUCCESS_RESPONSE_SITE)]);
+
+        $firstQueue->subscriber()->attach(collect($subscriberOne)->pluck('id')->toArray());
+
+        $firstMessageIdList = $this->collectMessageIdsOnQueues($messagesOnFirstQueue);
+        $secondMessageIdList = $this->collectMessageIdsOnQueues($messagesOnSecondQueue);
+
+        $messageIdList = array_merge($firstMessageIdList, $secondMessageIdList);
+        $sqsMessageWasSynced = new SqsMessagesWasSynced($messageIdList);
+
+        $subscriberAttachInput = $this->buildToAssertIfEqualMessageInput($sqsMessageWasSynced->messageIdList);
+
+        $this->listener->handle($sqsMessageWasSynced);
+
+        $savedMessages = Message::with('subscriber')->get();
+
+        $total = 0;
+        foreach ($savedMessages as $message) {
+            $total += $message->subscriber->count();
+        }
+
+        $this->assertMultipleSeeInDatabase('sent_message', $subscriberAttachInput->toArray());
+        $this->notSeeInDatabase('sent_message', ['status' => 'failed']);
+        $this->assertEquals(15, $total);
+    }
+
+    /**
+     * @param array $subscriberCreateOptions
+     * @return SqsMessagesWasSynced
+     */
+    private function prepareInstanceOfSqsMessageWasSynced($subscriberCreateOptions = [])
     {
         $firstQueue = factory(Queue::class)->create();
         $secondQueue = factory(Queue::class)->create();
@@ -56,23 +125,50 @@ class ProcessSyncedMessagesTest extends BaseTestCase
         $messagesOnFirstQueue = factory(Message::class, 5)->create(['queue_id' => $firstQueue->id]);
         $messagesOnSecondQueue = factory(Message::class, 5)->create(['queue_id' => $secondQueue->id]);
 
-        $subscriberOne = factory(Subscriber::class, 3)->create();
-        $subscriberTwo = factory(Subscriber::class, 2)->create();
+        $subscriberOne = factory(Subscriber::class, 3)->create($subscriberCreateOptions);
+        $subscriberTwo = factory(Subscriber::class, 2)->create($subscriberCreateOptions);
 
         $firstQueue->subscriber()->attach(collect($subscriberOne)->pluck('id')->toArray());
         $secondQueue->subscriber()->attach(collect($subscriberTwo)->pluck('id')->toArray());
 
+        $firstMessageIdList = $this->collectMessageIdsOnQueues($messagesOnFirstQueue);
+        $secondMessageIdList = $this->collectMessageIdsOnQueues($messagesOnSecondQueue);
 
-        $messageIdList = [];
-
-        foreach ($messagesOnFirstQueue as $messageFirst) {
-            $messageIdList[] = $messageFirst->message_id;
-        }
-
-        foreach ($messagesOnSecondQueue as $messageSecond) {
-            $messageIdList[] = $messageSecond->message_id;
-        }
+        $messageIdList = array_merge($firstMessageIdList, $secondMessageIdList);
 
         return new SqsMessagesWasSynced($messageIdList);
+    }
+
+    /**
+     * @param array $messages
+     * @return array
+     */
+    private function collectMessageIdsOnQueues($messages)
+    {
+        $messageIdList = [];
+
+        foreach ($messages as $message) {
+            $messageIdList[] = $message->message_id;
+        }
+
+        return $messageIdList;
+    }
+
+    /**
+     * @param array $messageIdList
+     * @param string $status
+     * @return \Illuminate\Support\Collection
+     */
+    private function buildToAssertIfEqualMessageInput($messageIdList, $status = 'sent')
+    {
+        $messages = $this->message->findAllWhereIn('message_id', $messageIdList, ['queue']);
+        $subscriberAttachInput = collect([]);
+        foreach ($messages as $message) {
+            foreach ($message->queue->subscriber as $subscriber) {
+                $subscriberAttachInput->put($subscriber->id, ['status' => $status]);
+            }
+        }
+
+        return $subscriberAttachInput;
     }
 }
