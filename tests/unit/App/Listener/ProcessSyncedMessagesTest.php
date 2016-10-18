@@ -11,6 +11,7 @@ class ProcessSyncedMessagesTest extends BaseTestCase
 {
     const SUCCESS_RESPONSE_SITE = 'http://gq-message-queuing-service.dev/example-response/success';
     const UNSUCCESSFUL_RESPONSE_SITE = 'http://gq-message-queuing-service.dev/example-response/failed';
+    const FORMS_PARAMS_RESPONSE_SITE = 'http://gq-message-queuing-service.dev/example-response/form_params';
 
     /**
      * @var MessageRepositoryEloquent
@@ -85,8 +86,14 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     {
         $firstQueue = factory(Queue::class)->create();
         $secondQueue = factory(Queue::class)->create();
-        $messagesOnFirstQueue = factory(Message::class, 5)->create(['queue_id' => $firstQueue->id]);
-        $messagesOnSecondQueue = factory(Message::class, 5)->create(['queue_id' => $secondQueue->id]);
+        $messagesOnFirstQueue = factory(Message::class, 5)->create([
+            'queue_id' => $firstQueue->id,
+            'message_content' => $this->sampleSalesForceMessage()
+        ]);
+        $messagesOnSecondQueue = factory(Message::class, 5)->create([
+            'queue_id' => $secondQueue->id,
+            'message_content' => $this->sampleSalesForceMessage()
+        ]);
         $subscriberOne = factory(Subscriber::class, 3)->create(['url' => url(self::SUCCESS_RESPONSE_SITE)]);
 
         $firstQueue->subscriber()->attach(collect($subscriberOne)->pluck('id')->toArray());
@@ -113,6 +120,23 @@ class ProcessSyncedMessagesTest extends BaseTestCase
         $this->assertEquals(15, $total);
     }
 
+    //to test unserialized input
+    public function it_receives_the_unserialized_form_input()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class)->create([
+            'queue_id' => $queue->id,
+            'message_content' => $this->sampleSalesForceMessage()
+        ]);
+
+        $subscriber = factory(Subscriber::class)->create(['url' => url(self::FORMS_PARAMS_RESPONSE_SITE)]);
+
+        $queue->subscriber()->attach($subscriber->id);
+
+        $sqsMessageWasSynced = new SqsMessagesWasSynced([$message->message_id]);
+        $this->listener->handle($sqsMessageWasSynced);
+    }
+
     /**
      * @param array $subscriberCreateOptions
      * @return SqsMessagesWasSynced
@@ -122,8 +146,14 @@ class ProcessSyncedMessagesTest extends BaseTestCase
         $firstQueue = factory(Queue::class)->create();
         $secondQueue = factory(Queue::class)->create();
 
-        $messagesOnFirstQueue = factory(Message::class, 5)->create(['queue_id' => $firstQueue->id]);
-        $messagesOnSecondQueue = factory(Message::class, 5)->create(['queue_id' => $secondQueue->id]);
+        $messagesOnFirstQueue = factory(Message::class, 5)->create([
+            'queue_id' => $firstQueue->id,
+            'message_content' => $this->sampleSalesForceMessage()
+        ]);
+        $messagesOnSecondQueue = factory(Message::class, 5)->create([
+            'queue_id' => $secondQueue->id,
+            'message_content' => $this->sampleSalesForceMessage()
+        ]);
 
         $subscriberOne = factory(Subscriber::class, 3)->create($subscriberCreateOptions);
         $subscriberTwo = factory(Subscriber::class, 2)->create($subscriberCreateOptions);
@@ -137,6 +167,14 @@ class ProcessSyncedMessagesTest extends BaseTestCase
         $messageIdList = array_merge($firstMessageIdList, $secondMessageIdList);
 
         return new SqsMessagesWasSynced($messageIdList);
+    }
+
+    /**
+     * @return string
+     */
+    private function sampleSalesForceMessage()
+    {
+        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:7:'changed';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
     }
 
     /**
@@ -171,4 +209,5 @@ class ProcessSyncedMessagesTest extends BaseTestCase
 
         return $subscriberAttachInput;
     }
+
 }

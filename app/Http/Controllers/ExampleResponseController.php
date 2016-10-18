@@ -33,4 +33,14 @@ class ExampleResponseController extends Controller
     {
         return $this->responseFactory->make('Failed.', self::BAD_REQUEST_STATUS_CODE);
     }
+
+    /**
+     * @return \Illuminate\Http\Response
+     */
+    public function form_params(Request $request)
+    {
+        $input = implode(',', $request->all());
+
+        return $this->responseFactory->make($input, self::SUCCESS_STATUS_CODE);
+    }
 }

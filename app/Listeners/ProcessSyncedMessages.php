@@ -5,12 +5,15 @@ namespace App\Listeners;
 use App\Events\SqsMessagesWasSynced;
 use App\Http\Controllers\StatusCodes;
 use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\Resolvers\UnserializeSalesForceMessages;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 
 class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 {
+    use UnserializeSalesForceMessages;
+
     const SENT = 'sent';
     const FAILED = 'failed';
 
@@ -47,7 +50,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
             if (!empty($message->queue->subscriber->count())) {
                 $this->message->attachSubscriber(
                     $message,
-                    $this->buildAttachInput($message->queue->subscriber, $message->content)->toArray()
+                    $this->buildAttachInput($message->queue->subscriber, $message->message_content)->toArray()
                 );
             }
         });
@@ -64,7 +67,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 
         collect($subscribers)->each(function ($subscriber) use ($subscriberAttachInput, $messageContent) {
 
-            $formParams = $this->unserializeMessageContent($messageContent);
+            $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($messageContent));
 
             $subscriberAttachInput->put(
                 $subscriber->id,
@@ -95,11 +98,9 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      * @param string $message
      * @return array
      */
-    private function unserializeMessageContent($message)
+    private function buildPostParams($message)
     {
-        //@todo UnserialzeMessage
-
-        return $options = array_merge(['http_errors' => false], []);
+        return array_merge(['http_errors' => false], ['form_params' => $message]);
     }
 
     /**
