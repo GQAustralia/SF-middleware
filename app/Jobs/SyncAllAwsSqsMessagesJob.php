@@ -11,6 +11,7 @@ use App\Jobs\Exceptions\NoMessagesToSyncException;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Repositories\Contracts\QueueRepositoryInterface;
 use App\Repositories\Eloquent\MessageRepositoryEloquent;
+use App\Resolvers\DifferMessageInputDataToDatabase;
 use App\Services\SQSClientService;
 use Aws\Sqs\Exception\SqsException;
 use Illuminate\Database\Eloquent\Collection;
@@ -18,6 +19,7 @@ use Illuminate\Database\QueryException;
 
 class SyncAllAwsSqsMessagesJob extends Job
 {
+    use DifferMessageInputDataToDatabase;
     /**
      * @var string
      */
@@ -51,13 +53,13 @@ class SyncAllAwsSqsMessagesJob extends Job
         $queues = $this->collectQueuesIdAndUrlOrFail($sqs, $databaseQueues);
         $queueMessages = $this->collectQueuesMessagesOrFail($sqs, $queues);
 
-        $insertPayload = $this->buildMessagePayloadForInsert($queueMessages);
+        $filteredQueueMessages = $this->validateAndRemoveDuplicateMessages($queueMessages);
 
-        $this->insertBulkMessagesOrFail($message, $insertPayload);
+        $this->insertBulkMessagesOrFail($message, $this->buildMessagePayloadForInsert($filteredQueueMessages));
 
-        $messageIdList = collect($queueMessages)->pluck('MessageId')->toArray();
-
-        event(new SqsMessagesWasSynced($messageIdList));
+        event(new SqsMessagesWasSynced(
+            collect($filteredQueueMessages)->pluck('MessageId')->toArray()
+        ));
     }
 
     /**
@@ -69,11 +71,7 @@ class SyncAllAwsSqsMessagesJob extends Job
     public function insertBulkMessagesOrFail(MessageRepositoryEloquent $message, $insertPayload)
     {
         try {
-            $result = $message->insertIgnoreBulk($insertPayload);
-
-            if (!$result) {
-                throw new DatabaseAlreadySyncedException('Database already synced.');
-            }
+            $message->insertIgnoreBulk($insertPayload);
         } catch (QueryException $exception) {
             throw new InsertIgnoreBulkException('Insert Ignore Bulk Error: ' . $exception->getMessage());
         }
@@ -159,6 +157,24 @@ class SyncAllAwsSqsMessagesJob extends Job
         }
 
         return $messages;
+    }
+
+    /**
+     * @param array $queueMessages
+     * @return array
+     * @throws DatabaseAlreadySyncedException
+     */
+    private function validateAndRemoveDuplicateMessages(array $queueMessages)
+    {
+        $filteredMessages = $this->computeDifference(collect($queueMessages)->pluck('MessageId')->toArray());
+
+        $result = collect($queueMessages)->whereIn('MessageId', $filteredMessages)->toArray();
+
+        if (empty($result)) {
+            throw new DatabaseAlreadySyncedException('Database already synced.');
+        }
+
+        return $result;
     }
 
     /**

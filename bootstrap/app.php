@@ -99,5 +99,6 @@ $app->group(['namespace' => 'App\Http\Controllers'], function ($app) {
 });
 
 $app->configure('aws');
+$app->configure('url');
 
 return $app;

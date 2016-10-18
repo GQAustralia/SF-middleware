@@ -15,7 +15,7 @@ class RepositoryEloquentTest extends BaseTestCase
         parent::setUp();
 
         $this->model = $this->getMockBuilder(Model::class)->getMock();
-        $this->collection = $this->getMockBuilder(Collection::class)->getMock();
+        $this->collection = $this->app->make(Collection::class);
     }
 
     /** @test */

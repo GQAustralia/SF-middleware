@@ -16,9 +16,7 @@ use Illuminate\Database\QueryException;
 
 class SyncAwsSqsMessagesJobTest extends BaseTestCase
 {
-    const QUEUE_NAME_SAMPLE = 'SampleQueFromTest';
-    const QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE = 'SampleQueFromTestWithNoMessages';
-    const QUEUE_MESSAGE_SAMPLE = 'Sample message from test';
+    use AWSTestHelpers;
 
     private $dispatcher;
     private $sqs;
@@ -30,8 +28,6 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $this->sqs = new SQSClientService();
         $this->dispatcher = $this->app->make(Dispatcher::class);
-
-        $this->SET_UP_SQS();
     }
 
     /**
@@ -45,13 +41,13 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     public function SET_UP_SQS()
     {
         try {
-            $this->sqs->client()->createQueue(['QueueName' => self::QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE])->get('QueueUrl');
-            $queueURL = $this->sqs->client()->createQueue(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+            $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
+            $queueURL = $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
 
             $this->message = $this->sqs->client()->sendMessage(array(
                 'QueueUrl' => $queueURL,
-                'MessageBody' => self::QUEUE_MESSAGE_SAMPLE
+                'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
             ));
 
         } catch (SqsException $exception) {
@@ -105,7 +101,31 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $this->expectException(NoMessagesToSyncException::class);
         $this->expectExceptionMessage('No available Queues Messages for sync.');
 
-        factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE]);
+        factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()]);
+
+        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
+    }
+
+    /** @test */
+    public function it_throws_an_error_on_saving_to_database_if_any_database_related_exception_occurs()
+    {
+        $this->SET_UP_SQS();
+
+        $this->expectException(InsertIgnoreBulkException::class);
+
+        $this->setConnection('test_mysql_database');
+
+        sleep(7);
+
+        factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
+        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
+        $this->sqs->client()->receiveMessage(['QueueUrl' => $queueUrl, 'VisibilityTimeout' => 2])->get('Messages');
+
+        sleep(7);
+
+        Schema::table('message', function ($table) {
+            $table->dropColumn('message_id');
+        });
 
         $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
     }
@@ -113,15 +133,17 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     /** @test */
     public function it_throws_an_exception_when_database_is_already_sync_to_sqs()
     {
+        $this->SET_UP_SQS();
+
         $this->setConnection('test_mysql_database');
 
         $this->expectException(DatabaseAlreadySyncedException::class);
         $this->expectExceptionMessage('Database already synced.');
 
-        sleep(15);
+        sleep(10);
 
-        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
-        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
+        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
         while ($availableMessage = $this->getAQueueMessage($queueUrl)) {
             factory(Message::class)->create([
@@ -138,37 +160,17 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_throws_an_error_on_saving_to_database_if_any_database_related_exception_occurs()
-    {
-        $this->expectException(InsertIgnoreBulkException::class);
-
-        $this->setConnection('test_mysql_database');
-
-        sleep(7);
-
-        factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
-        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
-        $this->sqs->client()->receiveMessage(['QueueUrl' => $queueUrl, 'VisibilityTimeout' => 2])->get('Messages');
-
-        sleep(7);
-
-        Schema::table('message', function ($table) {
-            $table->dropColumn('message_id');
-        });
-
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
-    }
-
-    /** @test */
     public function it_stores_aws_queues_messages_to_messages_table()
     {
+        $this->SET_UP_SQS();
+
         $this->withoutEvents();
         $this->setConnection('test_mysql_database');
 
         sleep(15);
 
-        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
-        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
+        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
         $queueAttributes = $this->sqs->client()->getQueueAttributes([
             'QueueUrl' => $queueUrl,
             'AttributeNames' => ['ApproximateNumberOfMessages']
@@ -205,8 +207,8 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     {
         echo PHP_EOL . 'DELETING QUEUES CREATED FROM THIS TEST....' . PHP_EOL;
 
-        $queueURL = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
-        $queueURLWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE])->get('QueueUrl');
+        $queueURL = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
+        $queueURLWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
 
         $queueURLResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueURL]);
         $queueURLWithNoMessagesResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueURLWithNoMessages]);

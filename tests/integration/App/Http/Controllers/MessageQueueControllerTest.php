@@ -10,10 +10,7 @@ use Illuminate\Support\Facades\Schema;
 
 class MessageQueueControllerTest extends BaseTestCase
 {
-    const QUEUE_NAME_SAMPLE = 'SampleQueFromTest';
-    const QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE = 'SampleQueFromTestWithNoMessages';
-
-    const SUCCESS_RESPONSE_SITE = 'http://gq-message-queuing-service.dev/example-response/success';
+    use AWSTestHelpers;
 
     private $sqs;
 
@@ -22,8 +19,6 @@ class MessageQueueControllerTest extends BaseTestCase
         parent::setUp();
 
         $this->sqs = new SQSClientService();
-
-        $this->SET_UP_SQS();
     }
 
     /**
@@ -38,12 +33,12 @@ class MessageQueueControllerTest extends BaseTestCase
     public function SET_UP_SQS()
     {
         try {
-            $this->sqs->client()->createQueue(['QueueName' => self::QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE])->get('QueueUrl');
-            $queueURL = $this->sqs->client()->createQueue(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+            $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
+            $queueURL = $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
             $this->sqs->client()->sendMessage(array(
                 'QueueUrl' => $queueURL,
-                'MessageBody' => $this->sampleSalesForceMessage()
+                'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
             ));
         } catch (SqsException $exception) {
             echo "ERROR: SET_UP_SQS method" . PHP_EOL;
@@ -76,7 +71,7 @@ class MessageQueueControllerTest extends BaseTestCase
     /** @test */
     public function it_returns_a_valid_response_when_no_messages_to_sync()
     {
-        factory(Queue::class, 2)->create(['aws_queue_name' => self::QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE]);
+        factory(Queue::class, 2)->create(['aws_queue_name' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()]);
 
         $this->post('sync');
 
@@ -104,8 +99,8 @@ class MessageQueueControllerTest extends BaseTestCase
 
         sleep(15);
 
-        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
-        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
+        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
+        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
         while ($availableMessage = $this->getAQueueMessage($queueUrl, 30)) {
             factory(\App\Message::class)->create([
@@ -130,7 +125,7 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+        factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
 
         Schema::table('message', function ($table) {
             $table->dropColumn('message_id');
@@ -148,7 +143,7 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
 
         $this->post('sync');
 
@@ -168,12 +163,12 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        $queue = factory(Queue::class)->create(['aws_queue_name' => self::QUEUE_NAME_SAMPLE]);
+        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
         $message = factory(Message::class)->create([
             'queue_id' => $queue->id,
-            'message_content' => $this->sampleSalesForceMessage()
+            'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
-        $subscriber = factory(Subscriber::class, 3)->create(['url' => url(self::SUCCESS_RESPONSE_SITE)]);
+        $subscriber = factory(Subscriber::class, 3)->create(['url' => url($this->SUCCESS_RESPONSE_SITE())]);
         $queue->subscriber()->attach(collect($subscriber)->pluck('id')->toArray());
 
         $this->post('sync');
@@ -193,8 +188,8 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         echo PHP_EOL . 'DELETING QUEUES CREATED FROM THIS TEST....' . PHP_EOL;
 
-        $queueURL = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_SAMPLE])->get('QueueUrl');
-        $queueURLWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => self::QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE])->get('QueueUrl');
+        $queueURL = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
+        $queueURLWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
 
         $queueURLResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueURL]);
         $queueURLWithNoMessagesResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueURLWithNoMessages]);
@@ -228,13 +223,5 @@ class MessageQueueControllerTest extends BaseTestCase
             ->get('Messages');
 
         return array_first($message);
-    }
-
-    /**
-     * @return string
-     */
-    private function sampleSalesForceMessage()
-    {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:7:'changed';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
     }
 }
