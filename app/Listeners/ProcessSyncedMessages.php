@@ -4,11 +4,13 @@ namespace App\Listeners;
 
 use App\Events\SqsMessagesWasSynced;
 use App\Http\Controllers\StatusCodes;
+use App\Message;
+use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
+use App\Subscriber;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Collection;
 
 class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 {
@@ -16,6 +18,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 
     const SENT = 'sent';
     const FAILED = 'failed';
+    const HTTP_NOT_FOUND = 'HTTP/1.1 404 Not Found';
 
     /**
      * @var MessageRepositoryInterface
@@ -28,54 +31,108 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     protected $guzzleClient;
 
     /**
+     * @var MessageLogRepositoryInterface
+     */
+    protected $messageLog;
+
+    /**
      * SqsMessagesWasSyncedEventListener constructor.
      * @param MessageRepositoryInterface $message
      * @param GuzzleClient $guzzleClient
+     * @param MessageLogRepositoryInterface $messageLog
      */
-    public function __construct(MessageRepositoryInterface $message, GuzzleClient $guzzleClient)
+    public function __construct(
+        MessageRepositoryInterface $message,
+        GuzzleClient $guzzleClient,
+        MessageLogRepositoryInterface $messageLog
+    )
     {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
+        $this->messageLog = $messageLog;
     }
 
     /**
      * @param SqsMessagesWasSynced $event
-     * @return array
      */
     public function handle(SqsMessagesWasSynced $event)
     {
         $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['queue']);
 
-        return collect($messages)->each(function ($message) {
-            if (!empty($message->queue->subscriber->count())) {
-                $this->message->attachSubscriber(
-                    $message,
-                    $this->buildAttachInput($message->queue->subscriber, $message->message_content)->toArray()
-                );
+        collect($messages)->each(function ($message) {
+            if ($this->hasSubscribers($message)) {
+                $this->handleMessageSubscribers($message);
             }
         });
     }
 
     /**
-     * @param Collection $subscribers
-     * @param $messageContent
-     * @return \Illuminate\Support\Collection
+     * @param Message $message
+     * @return integer
      */
-    private function buildAttachInput(Collection $subscribers, $messageContent)
+    private function hasSubscribers(Message $message)
     {
-        $subscriberAttachInput = collect([]);
+        return $message->queue->subscriber->count();
+    }
 
-        collect($subscribers)->each(function ($subscriber) use ($subscriberAttachInput, $messageContent) {
+    /**
+     * @param Message $message
+     */
+    private function handleMessageSubscribers(Message $message)
+    {
+        $subscriberMessageLogs = collect([]);
 
-            $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($messageContent));
+        collect($message->queue->subscriber)->each(function ($subscriber) use ($subscriberMessageLogs, $message) {
 
-            $subscriberAttachInput->put(
-                $subscriber->id,
-                ['status' => $this->getUrlStatus($subscriber->url, $formParams)]
-            );
+            $isValidUrl = $this->guardIsValidUrl($subscriber->url);
+
+            if ($isValidUrl) {
+                $response = $this->sendMessageToSubscriber($subscriber->url, $message->message_content);
+                $sentMessage = $this->insertSentMessage($message, $subscriber->id, $response->getStatusCode());
+
+                $messageLogPayload = $this->buildMessageLogPayload(
+                    $sentMessage->id,
+                    $response->getStatusCode(),
+                    $response->getBody()->getContents()
+                );
+            }
+
+            if (!$isValidUrl) {
+                $sentMessage = $this->insertSentMessage($message, $subscriber->id, 404);
+                $messageLogPayload = $this->buildMessageLogPayload($sentMessage->id, 404, self::HTTP_NOT_FOUND);
+            }
+
+            $subscriberMessageLogs->push($messageLogPayload);
         });
 
-        return $subscriberAttachInput;
+        $this->messageLog->insertBulk($subscriberMessageLogs->toArray());
+    }
+
+    /**
+     * @param string $url
+     * @return bool
+     */
+    private function guardIsValidUrl($url)
+    {
+        $file_headers = @get_headers($url);
+
+        if (!$file_headers || $file_headers[0] == self::HTTP_NOT_FOUND) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param string $url
+     * @param string $message
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    private function sendMessageToSubscriber($url, $message)
+    {
+        $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($message));
+
+        return $this->guzzleClient->post($url, $formParams);
     }
 
     /**
@@ -88,31 +145,28 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param string $url
-     * @param array $formParams
-     * @return string
+     * @param Message $message
+     * @param integer $subscriberId
+     * @param integer $statusCode
+     * @return Subscriber[belongsToMany]
      */
-    private function getUrlStatus($url, $formParams)
+    private function insertSentMessage(Message $message, $subscriberId, $statusCode)
     {
-        $urlStatus = self::FAILED;
+        $result = $this->message->attachSubscriber(
+            $message,
+            [$subscriberId => ['status' => $this->isResponseSentOrFailed($statusCode)]]
+        );
 
-        if ($this->guardIsValidUrl($url)) {
-            $urlStatus = $this->sendMessageToSubscriber($url, $formParams);
-        }
-
-        return $urlStatus;
+        return $result->subscriber[0]->pivot;
     }
 
     /**
-     * @param string $url
-     * @param array $options
+     * @param integer $responseCode
      * @return string
      */
-    private function sendMessageToSubscriber($url, $options = [])
+    private function isResponseSentOrFailed($responseCode)
     {
-        $result = $this->guzzleClient->post($url, $options);
-
-        if ($result->getStatusCode() === self::SUCCESS_STATUS_CODE) {
+        if ($responseCode == 200) {
             return self::SENT;
         }
 
@@ -120,18 +174,21 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param string $url
-     * @return bool
+     * @param integer $sentMessageId
+     * @param integer $responseCode
+     * @param string $responseBody
+     * @return array
      */
-    private function guardIsValidUrl($url)
+    private function buildMessageLogPayload($sentMessageId, $responseCode, $responseBody)
     {
-        $file_headers = @get_headers($url);
+        $dateNow = date('Y-m-d');
 
-        if (!$file_headers || $file_headers[0] == 'HTTP/1.1 404 Not Found') {
-            return false;
-        }
-
-        return true;
+        return [
+            'sent_message_id' => $sentMessageId,
+            'response_code' => $responseCode,
+            'response_body' => $responseBody,
+            'created_at' => $dateNow,
+            'updated_at' => $dateNow
+        ];
     }
-
 }
