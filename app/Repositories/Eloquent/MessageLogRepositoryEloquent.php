@@ -5,7 +5,7 @@ namespace App\Repositories\Eloquent;
 use App\MessageLog;
 use App\Repositories\Contracts\MessageLogRepositoryInterface;
 
-class MessageLogRepositoryEloquent implements MessageLogRepositoryInterface
+class MessageLogRepositoryEloquent extends RepositoryEloquent implements MessageLogRepositoryInterface
 {
     /**
      * @var SentMessage

@@ -2,9 +2,7 @@
 
 namespace App\Repositories\Contracts;
 
-use App\Message;
-
-interface MessageLogRepositoryInterface
+interface MessageLogRepositoryInterface extends RepositoryInterface
 {
     /**
      * @param array $payload
