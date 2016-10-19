@@ -79,11 +79,20 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
+     * @param string $message
+     * @return array
+     */
+    private function buildPostParams($message)
+    {
+        return array_merge(['http_errors' => false], ['form_params' => $message]);
+    }
+
+    /**
      * @param string $url
      * @param array $formParams
      * @return string
      */
-    public function getUrlStatus($url, $formParams)
+    private function getUrlStatus($url, $formParams)
     {
         $urlStatus = self::FAILED;
 
@@ -92,15 +101,6 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
         }
 
         return $urlStatus;
-    }
-
-    /**
-     * @param string $message
-     * @return array
-     */
-    private function buildPostParams($message)
-    {
-        return array_merge(['http_errors' => false], ['form_params' => $message]);
     }
 
     /**

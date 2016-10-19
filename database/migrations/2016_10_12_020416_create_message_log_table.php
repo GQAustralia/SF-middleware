@@ -16,7 +16,7 @@ class CreateMessageLogTable extends Migration
         Schema::create('message_log', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('sent_message_id');
-            $table->string('result');
+            $table->integer('response_code');
             $table->text('response_body');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
