@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\SqsMessagesWasSynced;
 use App\Http\Controllers\StatusCodes;
+use App\MessageLog;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
 use GuzzleHttp\Client as GuzzleClient;
@@ -28,30 +29,40 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     protected $guzzleClient;
 
     /**
+     * @var MessageLog
+     */
+    protected $messageLog;
+
+    /**
      * SqsMessagesWasSyncedEventListener constructor.
      * @param MessageRepositoryInterface $message
      * @param GuzzleClient $guzzleClient
+     * @param MessageLog $messageLog
      */
-    public function __construct(MessageRepositoryInterface $message, GuzzleClient $guzzleClient)
+    public function __construct(MessageRepositoryInterface $message, GuzzleClient $guzzleClient, MessageLog $messageLog)
     {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
+        $this->messageLog = $messageLog;
     }
 
-    /**
-     * @param SqsMessagesWasSynced $event
-     * @return array
-     */
+
     public function handle(SqsMessagesWasSynced $event)
     {
         $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['queue']);
 
         return collect($messages)->each(function ($message) {
             if (!empty($message->queue->subscriber->count())) {
+
+                $attachInput = $this->handleSubscribers($message->queue->subscriber, $message->message_content);
+
+                //array for attach input
                 $this->message->attachSubscriber(
                     $message,
-                    $this->buildAttachInput($message->queue->subscriber, $message->message_content)->toArray()
+                    $attachInput->toArray()
                 );
+
+                //aray for message log
             }
         });
     }
@@ -61,18 +72,32 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      * @param $messageContent
      * @return \Illuminate\Support\Collection
      */
-    private function buildAttachInput(Collection $subscribers, $messageContent)
+    private function handleSubscribers(Collection $subscribers, $messageContent)
     {
         $subscriberAttachInput = collect([]);
+        $subscriberMessageLogs = collect([]);
 
-        collect($subscribers)->each(function ($subscriber) use ($subscriberAttachInput, $messageContent) {
+        collect($subscribers)->each(function ($subscriber) use ($subscriberAttachInput, $subscriberMessageLogs, $messageContent) {
 
-            $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($messageContent));
+            $isValidUrl = $this->guardIsValidUrl($subscriber->url);
 
-            $subscriberAttachInput->put(
-                $subscriber->id,
-                ['status' => $this->getUrlStatus($subscriber->url, $formParams)]
-            );
+            if ($isValidUrl) {
+
+                $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($messageContent));
+
+                $result = $this->sendMessageToSubscriber($subscriber->url, $formParams);
+
+                $subscriberAttachInput->put(
+                    $subscriber->id,
+                    ['status' => ($result->getStatusCode() == 200) ? self::SENT : self::FAILED]
+                );
+
+            }
+
+            if (!$isValidUrl) {
+                $subscriberAttachInput->put($subscriber->id, ['status' => self::FAILED]);
+            }
+
         });
 
         return $subscriberAttachInput;
@@ -89,28 +114,12 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 
     /**
      * @param string $url
-     * @param array $formParams
-     * @return string
-     */
-    private function getUrlStatus($url, $formParams)
-    {
-        $urlStatus = self::FAILED;
-
-        if ($this->guardIsValidUrl($url)) {
-            $urlStatus = $this->sendMessageToSubscriber($url, $formParams);
-        }
-
-        return $urlStatus;
-    }
-
-    /**
-     * @param string $url
      * @param array $options
      * @return string
      */
     private function sendMessageToSubscriber($url, $options = [])
     {
-        $result = $this->guzzleClient->post($url, $options);
+        return $result = $this->guzzleClient->post($url, $options);
 
         if ($result->getStatusCode() === self::SUCCESS_STATUS_CODE) {
             return self::SENT;
