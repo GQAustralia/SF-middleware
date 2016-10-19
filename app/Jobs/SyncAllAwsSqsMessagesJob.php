@@ -199,13 +199,36 @@ class SyncAllAwsSqsMessagesJob extends Job
     {
         return collect($message)
             ->map(function ($message) {
-                return [
-                    'message_id' => $message['MessageId'],
-                    'queue_id' => $message['queue_id'],
-                    'message_content' => str_replace('"', '\'', $message['Body']),
-                    'completed' => 'N'
-                ];
+
+                $messageContent = $this->validateMessageContent($message['Body']);
+
+                if ($messageContent) {
+                    return [
+                        'message_id' => $message['MessageId'],
+                        'queue_id' => $message['queue_id'],
+                        'message_content' => $messageContent,
+                        'completed' => 'N'
+                    ];
+                }
+            })->reject(function ($message) {
+                return empty($message);
             })->toArray();
+    }
+
+    /**
+     * @param $messageContent
+     * @return mixed
+     */
+    private function validateMessageContent($messageContent)
+    {
+        $messageContent = str_replace('"', '\'', $messageContent);
+        $result = @unserialize(str_replace('\'', '"', $messageContent));
+
+        if (!$result) {
+            return false;
+        }
+
+        return $messageContent;
     }
 
     /**

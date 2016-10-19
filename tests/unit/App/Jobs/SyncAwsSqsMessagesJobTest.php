@@ -28,6 +28,8 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $this->sqs = new SQSClientService();
         $this->dispatcher = $this->app->make(Dispatcher::class);
+
+        $this->withoutEvents();
     }
 
     /**
@@ -44,7 +46,6 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
             $queueURL = $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
-
             $this->message = $this->sqs->client()->sendMessage(array(
                 'QueueUrl' => $queueURL,
                 'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
@@ -56,6 +57,63 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         }
 
         $this->assertTrue(true, true);
+    }
+
+    /** @test */
+    public function it_stores_aws_queues_messages_to_messages_table()
+    {
+        $this->SET_UP_SQS();
+
+        $this->setConnection('test_mysql_database');
+
+        sleep(15);
+
+        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
+        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
+        $queueAttributes = $this->sqs->client()->getQueueAttributes([
+            'QueueUrl' => $queueUrl,
+            'AttributeNames' => ['ApproximateNumberOfMessages']
+        ]);
+        $message = $this->sqs->client()->receiveMessage([
+            'QueueUrl' => $queueUrl,
+            'VisibilityTimeout' => 2
+        ])->get('Messages');
+
+        sleep(15);
+
+        $message = array_first($message);
+
+        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
+
+        sleep(10);
+
+        $this->assertEquals($queueAttributes['Attributes']['ApproximateNumberOfMessages'], Message::all()->count());
+        $this->seeInDatabase('message', [
+            'message_id' => $message['MessageId'],
+            'queue_id' => $queue->id,
+            'message_content' => $message['Body'],
+            'completed' => 'N'
+        ]);
+    }
+
+    /** @test */
+    public function it_does_not_insert_an_invalid_message_content()
+    {
+        $this->setConnection('test_mysql_database');
+
+        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
+        $queueUrl = $this->sqs->client()->getQueueUrl([
+            'QueueName' => $this->QUEUE_NAME_SAMPLE(),
+        ])->get('QueueUrl');
+
+        $messageId = $this->sqs->client()->sendMessage([
+            'QueueUrl' => $queueUrl,
+            'MessageBody' => 'invalidSalesForceMessageBody'
+        ])->get('MessageId');
+
+        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
+
+        $this->notSeeInDatabase('message', ['message_id' => $messageId]);
     }
 
     /**
@@ -157,44 +215,6 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         sleep(30);
 
         $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', 30));
-    }
-
-    /** @test */
-    public function it_stores_aws_queues_messages_to_messages_table()
-    {
-        $this->SET_UP_SQS();
-
-        $this->withoutEvents();
-        $this->setConnection('test_mysql_database');
-
-        sleep(15);
-
-        $queue = factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
-        $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
-        $queueAttributes = $this->sqs->client()->getQueueAttributes([
-            'QueueUrl' => $queueUrl,
-            'AttributeNames' => ['ApproximateNumberOfMessages']
-        ]);
-        $message = $this->sqs->client()->receiveMessage([
-            'QueueUrl' => $queueUrl,
-            'VisibilityTimeout' => 2
-        ])->get('Messages');
-
-        sleep(15);
-
-        $message = array_first($message);
-
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('all', '30'));
-
-        sleep(10);
-
-        $this->assertEquals($queueAttributes['Attributes']['ApproximateNumberOfMessages'], Message::all()->count());
-        $this->seeInDatabase('message', [
-            'message_id' => $message['MessageId'],
-            'queue_id' => $queue->id,
-            'message_content' => $message['Body'],
-            'completed' => 'N'
-        ]);
     }
 
     /**

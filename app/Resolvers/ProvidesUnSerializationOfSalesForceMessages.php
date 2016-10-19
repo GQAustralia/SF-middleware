@@ -2,7 +2,7 @@
 
 namespace App\Resolvers;
 
-trait UnserializeSalesForceMessages
+trait ProvidesUnSerializationOfSalesForceMessages
 {
     /**
      * @param string $message

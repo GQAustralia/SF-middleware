@@ -1,10 +1,10 @@
 <?php
 
-use App\Resolvers\UnserializeSalesForceMessages;
+use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
 
-class UnserializeSalesForceMessagesTest extends BaseTestCase
+class ProvidesUnSerializationOfSalesForceMessagesTest extends BaseTestCase
 {
-    use UnserializeSalesForceMessages;
+    use ProvidesUnSerializationOfSalesForceMessages;
 
     /** @test */
     public function it_unserialize_message()

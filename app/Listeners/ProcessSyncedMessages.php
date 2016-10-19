@@ -5,14 +5,14 @@ namespace App\Listeners;
 use App\Events\SqsMessagesWasSynced;
 use App\Http\Controllers\StatusCodes;
 use App\Repositories\Contracts\MessageRepositoryInterface;
-use App\Resolvers\UnserializeSalesForceMessages;
+use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 
 class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 {
-    use UnserializeSalesForceMessages;
+    use ProvidesUnSerializationOfSalesForceMessages;
 
     const SENT = 'sent';
     const FAILED = 'failed';

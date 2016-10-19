@@ -36,10 +36,11 @@ class MessageQueueControllerTest extends BaseTestCase
             $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
             $queueURL = $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
-            $this->sqs->client()->sendMessage(array(
+            $this->sqs->client()->sendMessage([
                 'QueueUrl' => $queueURL,
                 'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
-            ));
+            ]);
+
         } catch (SqsException $exception) {
             echo "ERROR: SET_UP_SQS method" . PHP_EOL;
             die($this->extractSQSMessage($exception->getMessage()));
@@ -95,6 +96,8 @@ class MessageQueueControllerTest extends BaseTestCase
     /** @test */
     public function it_returns_a_valid_response_on_already_synced_database_and_sqs()
     {
+        $this->SET_UP_SQS();
+
         $this->setConnection('test_mysql_database');
 
         sleep(15);
@@ -123,6 +126,8 @@ class MessageQueueControllerTest extends BaseTestCase
     /** @test */
     public function it_returns_an_invalid_response_on_database_insert_error()
     {
+        $this->SET_UP_SQS();
+        
         $this->setConnection('test_mysql_database');
 
         factory(Queue::class)->create(['aws_queue_name' => $this->QUEUE_NAME_SAMPLE()]);
