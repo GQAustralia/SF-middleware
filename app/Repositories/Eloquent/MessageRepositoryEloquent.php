@@ -90,10 +90,18 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
      * @param string $attribute
      * @param array $value
      * @param array $with
+     * @param array $optionalWhere
      * @return Message
      */
-    public function findAllWhereIn($attribute, $value, $with = [])
+    public function findAllWhereIn($attribute, $value, $with = [], $optionalWhere = [])
     {
-        return $this->message->with($with)->whereIn($attribute, $value)->get();
+        $result = $this->message->with($with)->whereIn($attribute, $value);
+
+        if (!empty($optionalWhere)) {
+            $key = key($optionalWhere);
+            $result->where($key, $optionalWhere[$key]);
+        }
+
+        return $result->get();
     }
 }

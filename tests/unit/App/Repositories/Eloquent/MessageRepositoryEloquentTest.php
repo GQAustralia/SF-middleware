@@ -252,4 +252,39 @@ class MessageRepositoryEloquentTest extends BaseTestCase
 
         $this->assertEmpty($result);
     }
+
+    /** @test */
+    public function it_returns_a_collection_on_using_wherein_and_optional_where()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class, 5)->create(['queue_id' => $queue->id]);
+        $subscriber = factory(Subscriber::class, 5)->create();
+        $subscriberIds = collect($subscriber)->pluck('id')->toArray();
+
+        $queue->subscriber()->attach($subscriberIds);
+
+        $messageIds = collect($message->toArray())->pluck('message_id');
+
+        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['queue'], ['queue_id' => $queue->id]);
+
+        $this->assertInstanceOf(Queue::class, $result[0]->queue);
+        $this->assertInstanceOf(Subscriber::class, $result[0]->queue->subscriber[0]);
+    }
+
+    /** @test */
+    public function it_returns_an_empty_collection_on_using_wherein_and_optional_where_when_optional_where_is_not_found()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class, 5)->create(['queue_id' => $queue->id]);
+        $subscriber = factory(Subscriber::class, 5)->create();
+        $subscriberIds = collect($subscriber)->pluck('id')->toArray();
+
+        $queue->subscriber()->attach($subscriberIds);
+
+        $messageIds = collect($message->toArray())->pluck('message_id');
+
+        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['queue'], ['queue_id' => 2]);
+
+        $this->assertEmpty($result);
+    }
 }
