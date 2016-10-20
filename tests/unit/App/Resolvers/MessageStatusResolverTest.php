@@ -34,19 +34,17 @@ class MessageStatusResolverTest extends BaseTestCase
     public function it_updates_message_status_to_complete_when_subscriber_url_are_all_sent()
     {
         $queue = factory(Queue::class)->create();
-        $messages = factory(Message::class, 5)->create(['queue_id' => $queue->id, 'completed' => 'N']);
+        $message = factory(Message::class)->create(['queue_id' => $queue->id, 'completed' => 'N']);
 
-        $subscriber = factory(Subscriber::class, 5)->create();
-        $subscriberIds = collect($subscriber)->pluck('id')->toArray();
+        $subscriber = factory(Subscriber::class)->create();
+        $subscriberSecond = factory(Subscriber::class)->create();
 
-        foreach ($messages as $message){
-            $message->subscriber()->attach($subscriberIds);
-        }
+        $this->repository->attachSubscriber($message, [
+            $subscriber->id => ['status' => 'sent'],
+            $subscriberSecond->id => ['status' => 'sent']
+        ]);
 
-//        $messages->subscriber()->attach($subscriberIds);
+        $this->resolver->resolve([$message->message_id]);
 
-    //    $messageIds = collect($message->toArray())->pluck('message_id');
-
-        $this->resolver->resolve($messageIds->toArray());
     }
 }

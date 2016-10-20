@@ -104,4 +104,34 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
 
         return $result->get();
     }
+
+    /**
+     * @param integer $messageId
+     * @return bool
+     */
+    public function getTotalFailSentMessage($messageId)
+    {
+        return $this->message->whereHas('subscriber', function ($subscriber) use ($messageId) {
+            $subscriber->where('status', 'failed');
+        })->where('message_id', $messageId)->count();
+    }
+
+    /**
+     * @param array $input
+     * @param string $messageId
+     * @return null
+     */
+    public function update(array $input, $messageId)
+    {
+        $message = $this->message->where('message_id', $messageId)->first();
+
+        if (!$message) {
+            return null;
+        }
+
+        $message->fill($input);
+        $message->save();
+
+        return $message;
+    }
 }

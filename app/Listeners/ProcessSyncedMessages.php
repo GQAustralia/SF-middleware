@@ -7,6 +7,7 @@ use App\Http\Controllers\StatusCodes;
 use App\Message;
 use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\Resolvers\MessageStatusResolver;
 use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
 use App\Subscriber;
 use GuzzleHttp\Client as GuzzleClient;
@@ -36,20 +37,28 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     protected $messageLog;
 
     /**
+     * @var MessageStatusResolver
+     */
+    protected $messageStatusResolver;
+
+    /**
      * SqsMessagesWasSyncedEventListener constructor.
      * @param MessageRepositoryInterface $message
      * @param GuzzleClient $guzzleClient
      * @param MessageLogRepositoryInterface $messageLog
+     * @param MessageStatusResolver $messageStatusResolver
      */
     public function __construct(
         MessageRepositoryInterface $message,
         GuzzleClient $guzzleClient,
-        MessageLogRepositoryInterface $messageLog
+        MessageLogRepositoryInterface $messageLog,
+        MessageStatusResolver $messageStatusResolver
     )
     {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
         $this->messageLog = $messageLog;
+        $this->messageStatusResolver = $messageStatusResolver;
     }
 
     /**
@@ -64,6 +73,8 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
                 $this->handleMessageSubscribers($message);
             }
         });
+
+        $this->messageStatusResolver->resolve($event->messageIdList);
     }
 
     /**

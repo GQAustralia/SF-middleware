@@ -6,6 +6,9 @@ use App\Repositories\Contracts\MessageRepositoryInterface;
 
 class MessageStatusResolver
 {
+    /**
+     * @var MessageRepositoryInterface
+     */
     protected $message;
 
     /**
@@ -19,7 +22,7 @@ class MessageStatusResolver
 
     /**
      * @param array $messageIdList
-     * @return null
+     * @return bool
      */
     public function resolve(array $messageIdList = [])
     {
@@ -27,9 +30,15 @@ class MessageStatusResolver
             return null;
         }
 
-        collect($messageIdList)->each(function($messageId) {
-            
+        collect($messageIdList)->each(function ($messageId) {
+            $totalFail = $this->message->getTotalFailSentMessage($messageId);
+
+            if ($totalFail === 0) {
+                $this->message->update(['completed' => 'Y'], $messageId);
+            }
         });
+
+        return true;
 
     }
 }
