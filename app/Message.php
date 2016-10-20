@@ -32,6 +32,6 @@ class Message extends Model
      */
     public function subscriber()
     {
-        return $this->belongsToMany(Subscriber::class, 'sent_message')->withPivot('status')->withTimestamps();
+        return $this->belongsToMany(Subscriber::class, 'sent_message')->withPivot('id','status')->withTimestamps();
     }
 }

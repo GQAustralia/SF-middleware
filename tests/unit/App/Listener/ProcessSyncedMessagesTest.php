@@ -4,6 +4,7 @@ use App\Events\SqsMessagesWasSynced;
 use App\Listeners\ProcessSyncedMessages;
 use App\Message;
 use App\Queue;
+use App\Repositories\Eloquent\MessageLogRepositoryEloquent;
 use App\Repositories\Eloquent\MessageRepositoryEloquent;
 use App\Subscriber;
 
@@ -32,6 +33,7 @@ class ProcessSyncedMessagesTest extends BaseTestCase
 
         $this->listener = $this->app->make(ProcessSyncedMessages::class);
         $this->message = $this->app->make(MessageRepositoryEloquent::class);
+        $this->messageLog = $this->app->make(MessageLogRepositoryEloquent::class);
     }
 
     /** @test */
@@ -135,6 +137,24 @@ class ProcessSyncedMessagesTest extends BaseTestCase
 
         $sqsMessageWasSynced = new SqsMessagesWasSynced([$message->message_id]);
         $this->listener->handle($sqsMessageWasSynced);
+    }
+
+    /** @test */
+    public function it_insert_to_message_logs()
+    {
+        $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced(['url' => url($this->SUCCESS_RESPONSE_SITE())]);
+
+        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['queue']);
+        $subscriberAttachInput = collect([]);
+        foreach ($messages as $message) {
+            foreach ($message->queue->subscriber as $subscriber) {
+                $subscriberAttachInput->put($subscriber->id, ['status' => 'sent']);
+            }
+        }
+
+        $this->listener->handle($eventInstance);
+
+        $this->assertEquals(25, $this->messageLog->all()->count());
     }
 
     /**

@@ -4,12 +4,13 @@ namespace App\Listeners;
 
 use App\Events\SqsMessagesWasSynced;
 use App\Http\Controllers\StatusCodes;
-use App\MessageLog;
+use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
+use App\Message;
 
 class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 {
@@ -29,7 +30,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     protected $guzzleClient;
 
     /**
-     * @var MessageLog
+     * @var MessageLogRepositoryInterface
      */
     protected $messageLog;
 
@@ -37,70 +38,101 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      * SqsMessagesWasSyncedEventListener constructor.
      * @param MessageRepositoryInterface $message
      * @param GuzzleClient $guzzleClient
-     * @param MessageLog $messageLog
+     * @param MessageLogRepositoryInterface $messageLog
      */
-    public function __construct(MessageRepositoryInterface $message, GuzzleClient $guzzleClient, MessageLog $messageLog)
+    public function __construct(
+        MessageRepositoryInterface $message,
+        GuzzleClient $guzzleClient,
+        MessageLogRepositoryInterface $messageLog
+    )
     {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
         $this->messageLog = $messageLog;
     }
 
-
+    /**
+     * @param SqsMessagesWasSynced $event
+     * @return $this
+     */
     public function handle(SqsMessagesWasSynced $event)
     {
         $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['queue']);
 
         return collect($messages)->each(function ($message) {
-            if (!empty($message->queue->subscriber->count())) {
+            if ($this->hasSubscribers($message)) {
 
-                $attachInput = $this->handleSubscribers($message->queue->subscriber, $message->message_content);
+                $messageLogs = $this->handleMessageSubscribers($message);
 
-                //array for attach input
-                $this->message->attachSubscriber(
-                    $message,
-                    $attachInput->toArray()
-                );
-
-                //aray for message log
+                $result = $this->messageLog->insertBulk($messageLogs->toArray());
             }
         });
     }
 
+    private function hasSubscribers(Message $message)
+    {
+        return $message->queue->subscriber->count();
+    }
+
     /**
-     * @param Collection $subscribers
-     * @param $messageContent
+     * @param Message $message
      * @return \Illuminate\Support\Collection
      */
-    private function handleSubscribers(Collection $subscribers, $messageContent)
+    private function handleMessageSubscribers(Message $message)
     {
-        $subscriberAttachInput = collect([]);
         $subscriberMessageLogs = collect([]);
 
-        collect($subscribers)->each(function ($subscriber) use ($subscriberAttachInput, $subscriberMessageLogs, $messageContent) {
+        collect($message->queue->subscriber)->each(function ($subscriber) use ($subscriberMessageLogs, $message) {
 
             $isValidUrl = $this->guardIsValidUrl($subscriber->url);
 
             if ($isValidUrl) {
 
-                $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($messageContent));
+                $response = $this->sendMessageToSubscriber($subscriber->url, $message->message_content);
 
-                $result = $this->sendMessageToSubscriber($subscriber->url, $formParams);
-
-                $subscriberAttachInput->put(
-                    $subscriber->id,
-                    ['status' => ($result->getStatusCode() == 200) ? self::SENT : self::FAILED]
+                $result = $this->message->attachSubscriber(
+                    $message,
+                    [$subscriber->id => ['status' => ($response->getStatusCode() == 200) ? self::SENT : self::FAILED]]
                 );
 
+                $messageLogPayload = $this->buildMessageLogPayload(
+                    $result->subscriber[0]->pivot->id,
+                    $response->getStatusCode(),
+                    $response->getBody()->getContents()
+                );
             }
 
             if (!$isValidUrl) {
-                $subscriberAttachInput->put($subscriber->id, ['status' => self::FAILED]);
+                $result = $this->message->attachSubscriber(
+                    $message,
+                    [$subscriber->id => ['status' => self::FAILED]]
+                );
+
+                $messageLogPayload = $this->buildMessageLogPayload(
+                    $result->subscriber[0]->pivot->id,
+                    404,
+                    'Page not Found'
+                );
             }
+
+            $subscriberMessageLogs->push($messageLogPayload);
 
         });
 
-        return $subscriberAttachInput;
+        return $subscriberMessageLogs;
+    }
+
+    private function buildMessageLogPayload($sentMessageId, $responseCode, $responseBody)
+    {
+        $dateNow = date('Y-m-d');
+
+        return [
+            'sent_message_id' => $sentMessageId,
+            'response_code' => $responseCode,
+            'response_body' => $responseBody,
+            'created_at' => $dateNow,
+            'updated_at' => $dateNow
+        ];
     }
 
     /**
@@ -117,15 +149,11 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      * @param array $options
      * @return string
      */
-    private function sendMessageToSubscriber($url, $options = [])
+    private function sendMessageToSubscriber($url, $message)
     {
-        return $result = $this->guzzleClient->post($url, $options);
+        $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($message));
 
-        if ($result->getStatusCode() === self::SUCCESS_STATUS_CODE) {
-            return self::SENT;
-        }
-
-        return self::FAILED;
+        return $this->guzzleClient->post($url, $formParams);
     }
 
     /**
