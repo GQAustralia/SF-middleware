@@ -27,6 +27,8 @@ $app->withFacades();
 
 $app->withEloquent();
 
+class_alias('Davispeixoto\Laravel5Salesforce\SalesforceFacade', 'Salesforce');
+
 /*
 |--------------------------------------------------------------------------
 | Register Container Bindings
@@ -82,6 +84,7 @@ $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\RepositoryServiceProvider::class);
 // $app->register(App\Providers\AuthServiceProvider::class);
 $app->register(App\Providers\EventServiceProvider::class);
+$app->register(Davispeixoto\Laravel5Salesforce\SalesforceServiceProvider::class);
 
 /*
 |--------------------------------------------------------------------------
