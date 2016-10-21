@@ -26,4 +26,17 @@ interface MessageRepositoryInterface extends RepositoryInterface
      * @return mixed
      */
     public function findAllWhereIn($attribute, $value, $with = []);
+
+    /**
+     * @param integer $messageId
+     * @return integer
+     */
+    public function getTotalFailSentMessage($messageId);
+
+    /**
+     * @param array $input
+     * @param string $messageId
+     * @return mixed
+     */
+    public function update(array $input, $messageId);
 }

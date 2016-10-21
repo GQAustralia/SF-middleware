@@ -252,4 +252,78 @@ class MessageRepositoryEloquentTest extends BaseTestCase
 
         $this->assertEmpty($result);
     }
+
+    /** @test */
+    public function it_returns_a_collection_on_using_wherein_and_optional_where()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class, 5)->create(['queue_id' => $queue->id]);
+        $subscriber = factory(Subscriber::class, 5)->create();
+        $subscriberIds = collect($subscriber)->pluck('id')->toArray();
+
+        $queue->subscriber()->attach($subscriberIds);
+
+        $messageIds = collect($message->toArray())->pluck('message_id');
+
+        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['queue'], ['queue_id' => $queue->id]);
+
+        $this->assertInstanceOf(Queue::class, $result[0]->queue);
+        $this->assertInstanceOf(Subscriber::class, $result[0]->queue->subscriber[0]);
+    }
+
+    /** @test */
+    public function it_returns_an_empty_collection_on_using_wherein_and_optional_where_when_optional_where_is_not_found()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class, 5)->create(['queue_id' => $queue->id]);
+        $subscriber = factory(Subscriber::class, 5)->create();
+        $subscriberIds = collect($subscriber)->pluck('id')->toArray();
+
+        $queue->subscriber()->attach($subscriberIds);
+
+        $messageIds = collect($message->toArray())->pluck('message_id');
+
+        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['queue'], ['queue_id' => 2]);
+
+        $this->assertEmpty($result);
+    }
+
+    /** @test */
+    public function it_returns_total_number_of_failed_sent_message()
+    {
+        $queue = factory(Queue::class)->create();
+        $message = factory(Message::class)->create(['queue_id' => $queue->id]);
+        $subscriber = factory(Subscriber::class)->create();
+
+        $message->subscriber()->attach([$subscriber->id => ['status' => 'failed']]);
+
+        $result = $this->repository->getTotalFailSentMessage($message->message_id);
+
+        $this->assertEquals(1, $result);
+    }
+
+    /** @test */
+    public function it_returns_null_on_update_when_message_does_not_exist()
+    {
+        $result = $this->repository->update(['completed' => 'Y'], 'unknownId');
+
+        $this->assertNull($result);
+    }
+
+    /** @test */
+    public function it_returns_message_on_update_on_successful_update()
+    {
+        $message = factory(Message::class)->create(['completed' => 'N']);
+
+        $updateInput = ['completed' => 'Y'];
+
+        $result = $this->repository->update($updateInput, $message->message_id);
+
+        $this->assertInstanceOf(Message::class, $result);
+        $this->seeInDatabase('message', [
+            'message_id' => $message->message_id,
+            'completed' => 'Y'
+        ]);
+    }
+
 }

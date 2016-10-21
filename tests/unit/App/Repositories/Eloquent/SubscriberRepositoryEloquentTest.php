@@ -34,9 +34,10 @@ class SubscriberRepositoryEloquentTest extends BaseTestCase
         $this->assertInstanceOf(Subscriber::class, $result);
         $this->seeInDatabase('subscriber', [
             'platform_name' => $input->platform_name,
-            'url' => $input->url
+            'url' => $input->url,
+            'filename' => $input->filename
         ]);
-        $this->assertAttributesExpectedValues(['platform_name', 'url'], $input, $result);
+        $this->assertAttributesExpectedValues(['platform_name', 'url', 'filename'], $input, $result);
     }
 
     /** @test */

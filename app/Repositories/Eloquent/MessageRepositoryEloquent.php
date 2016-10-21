@@ -90,10 +90,48 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
      * @param string $attribute
      * @param array $value
      * @param array $with
+     * @param array $optionalWhere
      * @return Message
      */
-    public function findAllWhereIn($attribute, $value, $with = [])
+    public function findAllWhereIn($attribute, $value, $with = [], $optionalWhere = [])
     {
-        return $this->message->with($with)->whereIn($attribute, $value)->get();
+        $result = $this->message->with($with)->whereIn($attribute, $value);
+
+        if (!empty($optionalWhere)) {
+            $key = key($optionalWhere);
+            $result->where($key, $optionalWhere[$key]);
+        }
+
+        return $result->get();
+    }
+
+    /**
+     * @param integer $messageId
+     * @return bool
+     */
+    public function getTotalFailSentMessage($messageId)
+    {
+        return $this->message->whereHas('subscriber', function ($subscriber) use ($messageId) {
+            $subscriber->where('status', 'failed');
+        })->where('message_id', $messageId)->count();
+    }
+
+    /**
+     * @param array $input
+     * @param string $messageId
+     * @return null
+     */
+    public function update(array $input, $messageId)
+    {
+        $message = $this->message->where('message_id', $messageId)->first();
+
+        if (!$message) {
+            return null;
+        }
+
+        $message->fill($input);
+        $message->save();
+
+        return $message;
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\StatusCodes;
 use App\Message;
 use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\Resolvers\MessageStatusResolver;
 use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
 use App\Subscriber;
 use GuzzleHttp\Client as GuzzleClient;
@@ -36,20 +37,28 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     protected $messageLog;
 
     /**
+     * @var MessageStatusResolver
+     */
+    protected $messageStatusResolver;
+
+    /**
      * SqsMessagesWasSyncedEventListener constructor.
      * @param MessageRepositoryInterface $message
      * @param GuzzleClient $guzzleClient
      * @param MessageLogRepositoryInterface $messageLog
+     * @param MessageStatusResolver $messageStatusResolver
      */
     public function __construct(
         MessageRepositoryInterface $message,
         GuzzleClient $guzzleClient,
-        MessageLogRepositoryInterface $messageLog
+        MessageLogRepositoryInterface $messageLog,
+        MessageStatusResolver $messageStatusResolver
     )
     {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
         $this->messageLog = $messageLog;
+        $this->messageStatusResolver = $messageStatusResolver;
     }
 
     /**
@@ -64,6 +73,8 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
                 $this->handleMessageSubscribers($message);
             }
         });
+
+        $this->messageStatusResolver->resolve($event->messageIdList);
     }
 
     /**
@@ -87,7 +98,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
             $isValidUrl = $this->guardIsValidUrl($subscriber->url);
 
             if ($isValidUrl) {
-                $response = $this->sendMessageToSubscriber($subscriber->url, $message->message_content);
+                $response = $this->sendMessageToSubscriber($subscriber->url, $subscriber->filename, $message->message_content);
                 $sentMessage = $this->insertSentMessage($message, $subscriber->id, $response->getStatusCode());
 
                 $messageLogPayload = $this->buildMessageLogPayload(
@@ -125,12 +136,19 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 
     /**
      * @param string $url
+     * @param string $filename
      * @param string $message
      * @return \Psr\Http\Message\ResponseInterface
      */
-    private function sendMessageToSubscriber($url, $message)
+    private function sendMessageToSubscriber($url, $filename, $message)
     {
-        $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($message));
+        $formParams = array_merge(
+            ['http_errors' => false],
+            ['form_params' => array_merge(
+                ['filename' => $filename],
+                $this->unSerializeSalesForceMessage($message)
+            )]
+        );
 
         return $this->guzzleClient->post($url, $formParams);
     }
@@ -139,9 +157,12 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      * @param string $message
      * @return array
      */
-    private function buildPostParams($message)
+    private function buildPostParams($message, $filename)
     {
-        return array_merge(['http_errors' => false], ['form_params' => $message]);
+        return array_merge(
+          ['http_errors' => false, 'filename' => $filename],
+          ['form_params' => $message]
+        );
     }
 
     /**
