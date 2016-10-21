@@ -79,7 +79,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             'VisibilityTimeout' => 2
         ])->get('Messages');
 
-        sleep(15);
+        sleep(25);
 
         $message = array_first($message);
 
