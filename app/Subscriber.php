@@ -13,7 +13,7 @@ class Subscriber extends Model
      *
      * @var array
      */
-    protected $fillable = ['platform_name', 'url', 'filename'];
+    protected $fillable = ['platform_name', 'url'];
 
     /**
      * A Subscriber belongs to many Queue.

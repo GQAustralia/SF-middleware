@@ -17,7 +17,6 @@ class CreateSubscriberTable extends Migration
             $table->increments('id');
             $table->string('platform_name');
             $table->string('url');
-            $table->string('filename');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });

@@ -98,7 +98,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
             $isValidUrl = $this->guardIsValidUrl($subscriber->url);
 
             if ($isValidUrl) {
-                $response = $this->sendMessageToSubscriber($subscriber->url, $subscriber->filename, $message->message_content);
+                $response = $this->sendMessageToSubscriber($subscriber->url, $message->message_content);
                 $sentMessage = $this->insertSentMessage($message, $subscriber->id, $response->getStatusCode());
 
                 $messageLogPayload = $this->buildMessageLogPayload(
@@ -136,18 +136,14 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 
     /**
      * @param string $url
-     * @param string $filename
      * @param string $message
      * @return \Psr\Http\Message\ResponseInterface
      */
-    private function sendMessageToSubscriber($url, $filename, $message)
+    private function sendMessageToSubscriber($url, $message)
     {
         $formParams = array_merge(
             ['http_errors' => false],
-            ['form_params' => array_merge(
-                ['filename' => $filename],
-                $this->unSerializeSalesForceMessage($message)
-            )]
+            ['form_params' => $this->unSerializeSalesForceMessage($message)]
         );
 
         return $this->guzzleClient->post($url, $formParams);
