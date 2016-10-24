@@ -14,6 +14,7 @@ use Laravel\Lumen\Http\ResponseFactory;
 use Aws\Sns\Message;
 use Aws\Sns\MessageValidator;
 use Aws\Sns\Exception\InvalidSnsMessageException;
+use App\Services\OutboundService;
 
 class SqsOutboundController extends Controller {
 
@@ -30,9 +31,9 @@ class SqsOutboundController extends Controller {
      * MessageQueueController constructor.
      * @param ResponseFactory $responseFactory
      */
-    public function __construct(ResponseFactory $responseFactory) {
-        $this->responseFactory = $responseFactory;
-        $this->outboundQueue = env('outboundQueue');
+    public function __construct() {
+//        $this->responseFactory = $responseFactory;
+//        $this->outboundQueue = env('outboundQueue');
     }
 
     /**
@@ -93,6 +94,11 @@ class SqsOutboundController extends Controller {
         if ($message['Type'] === 'UnsubscribeConfirmation') {
             file_get_contents($message['SubscribeURL']);
         }
+    }
+    
+    public function testZoho(){
+         $outboundService = new OutboundService();
+     $outboundService->sendMessagesToZOHO();
     }
 
 }
