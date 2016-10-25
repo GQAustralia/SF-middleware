@@ -98,7 +98,7 @@ class SqsOutboundController extends Controller {
     
     public function testZoho(){
          $outboundService = new OutboundService();
-     $outboundService->sendMessagesToZOHO();
+         $outboundService->sendMessagesToSalesforce();
     }
 
 }

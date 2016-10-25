@@ -83,7 +83,9 @@ $app->register(App\Providers\RepositoryServiceProvider::class);
 // $app->register(App\Providers\AuthServiceProvider::class);
 $app->register(App\Providers\EventServiceProvider::class);
 $app->register(App\Providers\CommandServiceProvider::class);
-$app->register(MichaelB\LumenMake\LumenMakeServiceProvider::class); 
+$app->register(MichaelB\LumenMake\LumenMakeServiceProvider::class);
+$app->register(Davispeixoto\Laravel5Salesforce\SalesforceServiceProvider::class);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -102,5 +104,6 @@ $app->group(['namespace' => 'App\Http\Controllers'], function ($app) {
 
 $app->configure('aws');
 $app->configure('url');
+class_alias('Davispeixoto\Laravel5Salesforce\SalesforceFacade', 'Salesforce');
 
 return $app;

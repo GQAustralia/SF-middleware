@@ -13,7 +13,6 @@
 //date_default_timezone_set('Australia/Sydney');
 
 // Outbound Aws Management
-$app->post('outbound/notification', 'SqsOutboundController@notify');
  
 
 
