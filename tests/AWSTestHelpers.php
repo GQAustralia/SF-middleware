@@ -25,7 +25,7 @@ trait AWSTestHelpers
      */
     public function QUEUE_NAME_WITH_INVALID_MESSAGES_SAMPLE()
     {
-        return 'SampleQueFromTestWithNoMessages';
+        return 'SampleQueFromTestWithInvalidMessages';
     }
 
     /**

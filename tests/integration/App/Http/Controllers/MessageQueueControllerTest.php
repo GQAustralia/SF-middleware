@@ -68,7 +68,7 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         factory(Action::class, 2)->create(['name' => 'changed']);
 
-        $this->post('sync/' . $this->QUEUE_NAME_WITH_INVALID_MESSAGES_SAMPLE());
+        $this->post('sync/' . $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE());
 
         $this->assertEquals('No available Queues Messages for sync.', $this->getContent());
         $this->assertResponseOk();
@@ -171,7 +171,7 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        $action = factory(Action::class)->create(['name' => $this->QUEUE_NAME_SAMPLE()]);
+        $action = factory(Action::class)->create(['name' => 'changed']);
         $message = factory(Message::class)->create([
             'action_id' => $action->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()

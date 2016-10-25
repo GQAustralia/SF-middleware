@@ -4,15 +4,14 @@ namespace App\Listeners;
 
 use App\Events\ExampleEvent;
 use App\Message;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
+/**
+ * @codeCoverageIgnore
+ */
 class ExampleListener
 {
     /**
-     * Create the event listener.
-     *
-     * @return void
+     * ExampleListener constructor.
      */
     public function __construct()
     {

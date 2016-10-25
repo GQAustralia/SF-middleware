@@ -150,18 +150,6 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param string $message
-     * @return array
-     */
-    private function buildPostParams($message, $filename)
-    {
-        return array_merge(
-          ['http_errors' => false, 'filename' => $filename],
-          ['form_params' => $message]
-        );
-    }
-
-    /**
      * @param Message $message
      * @param integer $subscriberId
      * @param integer $statusCode

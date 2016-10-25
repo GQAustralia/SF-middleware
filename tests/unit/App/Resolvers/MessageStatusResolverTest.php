@@ -34,7 +34,7 @@ class MessageStatusResolverTest extends BaseTestCase
     public function it_updates_message_status_to_complete_when_subscriber_url_are_all_sent()
     {
         $queue = factory(Action::class)->create();
-        $message = factory(Message::class)->create(['queue_id' => $queue->id, 'completed' => 'N']);
+        $message = factory(Message::class)->create(['action_id' => $queue->id, 'completed' => 'N']);
 
         $subscriber = factory(Subscriber::class)->create();
         $subscriberSecond = factory(Subscriber::class)->create();

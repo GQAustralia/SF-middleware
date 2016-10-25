@@ -2,8 +2,9 @@
 
 namespace App\Events;
 
-use App\Message;
-
+/**
+ * @codeCoverageIgnore
+ */
 class ExampleEvent extends Event
 {
     /**

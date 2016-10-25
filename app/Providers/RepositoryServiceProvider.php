@@ -2,13 +2,13 @@
 
 namespace App\Providers;
 
+use App\Repositories\Contracts\ActionRepositoryInterface;
 use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
-use App\Repositories\Contracts\ActionRepositoryInterface;
 use App\Repositories\Contracts\SubscriberRepositoryInterface;
+use App\Repositories\Eloquent\ActionRepositoryEloquent;
 use App\Repositories\Eloquent\MessageLogRepositoryEloquent;
 use App\Repositories\Eloquent\MessageRepositoryEloquent;
-use App\Repositories\Eloquent\ActionRepositoryEloquent;
 use App\Repositories\Eloquent\SubscriberRepositoryEloquent;
 use Illuminate\Support\ServiceProvider;
 
