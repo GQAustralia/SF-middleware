@@ -72,8 +72,8 @@ class OutboundService implements AWSClientInterface
         }
        
     }
-    public function sendMessagesToZOHO(){
-        $OutboundZOHOService = new OutboundZOHOService;
+    public function sendMessagesToSalesforce(){
+        $OutboundSalesforceService = new OutboundSalesforceService;
         $messages = $this->getQueueMessages();
         if($messages !== false){
             foreach($messages as $message){
@@ -84,7 +84,7 @@ class OutboundService implements AWSClientInterface
                         $attributes[$key] = $attr['StringValue'];
                     }
                 }
-               $response = $OutboundZOHOService->sendToZOHO($xml,$attributes);
+               $response = $OutboundSalesforceService->sendToSalesforce($xml,$attributes);
                var_dump($response);
             }
         }
