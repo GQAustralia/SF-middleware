@@ -1,31 +1,31 @@
 <?php
 
 use App\Message;
-use App\Queue;
+use App\Action;
 use App\Subscriber;
 
 class SubscriberTest extends TestCase
 {
     /** @test */
-    public function it_belongs_to_many_queue()
+    public function it_belongs_to_many_action()
     {
         $model = Mockery::mock('App\Subscriber[belongsToMany]');
 
-        $model->shouldReceive('belongsToMany')->with(Queue::class)->andReturnSelf();
+        $model->shouldReceive('belongsToMany')->with(Action::class)->andReturnSelf();
         $model->shouldReceive('withTimestamps')->andReturn(true);
 
-        $this->assertTrue($model->queue());
+        $this->assertTrue($model->action());
     }
 
     /** @test */
-    public function it_returns_queue_on_a_many_to_many_queue_relationship()
+    public function it_returns_action_on_a_many_to_many_action_relationship()
     {
         $subscriber = factory(Subscriber::class)->create();
-        $queue = factory(Queue::class)->create();
+        $action = factory(Action::class)->create();
 
-        $subscriber->queue()->attach($subscriber->id);
+        $subscriber->action()->attach($subscriber->id);
 
-        $this->assertInstanceOf(Queue::class, $subscriber->queue[0]);
+        $this->assertInstanceOf(Action::class, $subscriber->action[0]);
     }
 
     /** @test */
@@ -33,11 +33,11 @@ class SubscriberTest extends TestCase
     {
         $model = Mockery::mock('App\Subscriber[belongsToMany]');
 
-        $model->shouldReceive('belongsToMany')->with(Queue::class)->andReturnSelf();
+        $model->shouldReceive('belongsToMany')->with(Action::class)->andReturnSelf();
         $model->shouldReceive('withPivot')->andReturnSelf();
         $model->shouldReceive('withTimestamps')->andReturn(true);
 
-        $this->assertTrue($model->queue());
+        $this->assertTrue($model->action());
     }
 
     /** @test */

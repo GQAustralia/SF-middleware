@@ -11,8 +11,8 @@
 |
 */
 
-$app->post('sync', [
-    'as' => 'sync',
+$app->post('sync/{queue}', [
+    'as' => 'sync/{queue}',
     'uses' => 'MessageQueueController@sync'
 ]);
 
@@ -31,4 +31,3 @@ $app->group(['prefix' => 'example-response', 'namespace' => 'App\Http\Controller
         'uses' => 'ExampleResponseController@form_params'
     ]);
 });
-

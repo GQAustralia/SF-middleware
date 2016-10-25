@@ -1,7 +1,7 @@
 <?php
 
 use App\Message;
-use App\Queue;
+use App\Action;
 use App\Subscriber;
 
 class MessageTest extends TestCase
@@ -9,26 +9,26 @@ class MessageTest extends TestCase
     /**
      * @test
      */
-    public function it_belongs_to_a_queue()
+    public function it_belongs_to_a_action()
     {
         $model = Mockery::mock('App\Message[belongsTo]');
 
-        $model->shouldReceive('belongsTo')->with(Queue::class)->andReturn(true);
+        $model->shouldReceive('belongsTo')->with(Action::class)->andReturn(true);
 
-        $this->assertTrue($model->queue());
+        $this->assertTrue($model->action());
     }
 
     /** @test */
-    public function it_returns_queue_on_calling_on_a_belongs_to_queue_relationship()
+    public function it_returns_action_on_calling_on_a_belongs_to_action_relationship()
     {
-        $queue = factory(Queue::class)->create();
+        $action = factory(Action::class)->create();
         $message = factory(Message::class, 2)->create([
-            'queue_id' => $queue->id
+            'action_id' => $action->id
         ]);
 
-        $messageWithQueue = Message::with('queue')->where('queue_id', $queue->id)->get();
+        $messageWithQueue = Message::with('action')->where('action_id', $action->id)->get();
 
-        $this->assertInstanceOf(Queue::class, $messageWithQueue[0]->queue);
+        $this->assertInstanceOf(Action::class, $messageWithQueue[0]->action);
         $this->assertEquals(2, count($messageWithQueue));
     }
 

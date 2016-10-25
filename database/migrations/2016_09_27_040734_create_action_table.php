@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
-class CreateQueueSubscriberTable extends Migration
+class CreateActionTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,9 @@ class CreateQueueSubscriberTable extends Migration
      */
     public function up()
     {
-        Schema::create('queue_subscriber', function (Blueprint $table) {
+        Schema::create('action', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('queue_id');
-            $table->integer('subscriber_id');
+            $table->string('name');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -29,6 +28,6 @@ class CreateQueueSubscriberTable extends Migration
      */
     public function down()
     {
-        Schema::drop('queue_subscriber');
+        Schema::drop('action');
     }
 }

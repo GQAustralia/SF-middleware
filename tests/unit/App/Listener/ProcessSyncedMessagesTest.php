@@ -3,7 +3,7 @@
 use App\Events\SqsMessagesWasSynced;
 use App\Listeners\ProcessSyncedMessages;
 use App\Message;
-use App\Queue;
+use App\Action;
 use App\Repositories\Eloquent\MessageLogRepositoryEloquent;
 use App\Repositories\Eloquent\MessageRepositoryEloquent;
 use App\Subscriber;
@@ -39,10 +39,10 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     {
         $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced(['url' => url($this->SUCCESS_RESPONSE_SITE())]);
 
-        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['queue']);
+        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['action']);
         $subscriberAttachInput = collect([]);
         foreach ($messages as $message) {
-            foreach ($message->queue->subscriber as $subscriber) {
+            foreach ($message->action->subscriber as $subscriber) {
                 $subscriberAttachInput->put($subscriber->id, ['status' => 'sent']);
             }
         }
@@ -57,10 +57,10 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     {
         $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced(['url' => url($this->UNSUCCESSFUL_RESPONSE_SITE())]);
 
-        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['queue']);
+        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['action']);
         $subscriberAttachInput = collect([]);
         foreach ($messages as $message) {
-            foreach ($message->queue->subscriber as $subscriber) {
+            foreach ($message->action->subscriber as $subscriber) {
                 $subscriberAttachInput->put($subscriber->id, ['status' => 'failed']);
             }
         }
@@ -82,24 +82,24 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_does_not_add_to_attach_if_there_is_no_associated_subscriber_on_message_queue()
+    public function it_does_not_add_to_attach_if_there_is_no_associated_subscriber_on_message_action()
     {
-        $firstQueue = factory(Queue::class)->create();
-        $secondQueue = factory(Queue::class)->create();
-        $messagesOnFirstQueue = factory(Message::class, 5)->create([
-            'queue_id' => $firstQueue->id,
+        $firstaction = factory(Action::class)->create();
+        $secondaction = factory(Action::class)->create();
+        $messagesOnFirstaction = factory(Message::class, 5)->create([
+            'action_id' => $firstaction->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
-        $messagesOnSecondQueue = factory(Message::class, 5)->create([
-            'queue_id' => $secondQueue->id,
+        $messagesOnSecondaction = factory(Message::class, 5)->create([
+            'action_id' => $secondaction->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
         $subscriberOne = factory(Subscriber::class, 3)->create(['url' => url($this->SUCCESS_RESPONSE_SITE())]);
 
-        $firstQueue->subscriber()->attach(collect($subscriberOne)->pluck('id')->toArray());
+        $firstaction->subscriber()->attach(collect($subscriberOne)->pluck('id')->toArray());
 
-        $firstMessageIdList = $this->collectMessageIdsOnQueues($messagesOnFirstQueue);
-        $secondMessageIdList = $this->collectMessageIdsOnQueues($messagesOnSecondQueue);
+        $firstMessageIdList = $this->collectMessageIdsOnactions($messagesOnFirstaction);
+        $secondMessageIdList = $this->collectMessageIdsOnactions($messagesOnSecondaction);
 
         $messageIdList = array_merge($firstMessageIdList, $secondMessageIdList);
         $sqsMessageWasSynced = new SqsMessagesWasSynced($messageIdList);
@@ -123,15 +123,15 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     //to test unserialized input
     public function it_receives_the_unserialized_form_input()
     {
-        $queue = factory(Queue::class)->create();
+        $action = factory(Action::class)->create();
         $message = factory(Message::class)->create([
-            'queue_id' => $queue->id,
+            'action_id' => $action->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
 
         $subscriber = factory(Subscriber::class)->create(['url' => url($this->FORMS_PARAMS_RESPONSE_SITE())]);
 
-        $queue->subscriber()->attach($subscriber->id);
+        $action->subscriber()->attach($subscriber->id);
 
         $sqsMessageWasSynced = new SqsMessagesWasSynced([$message->message_id]);
         $this->listener->handle($sqsMessageWasSynced);
@@ -142,10 +142,10 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     {
         $eventInstance = $this->prepareInstanceOfSqsMessageWasSynced(['url' => url($this->SUCCESS_RESPONSE_SITE())]);
 
-        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['queue']);
+        $messages = $this->message->findAllWhereIn('message_id', $eventInstance->messageIdList, ['action']);
         $subscriberAttachInput = collect([]);
         foreach ($messages as $message) {
-            foreach ($message->queue->subscriber as $subscriber) {
+            foreach ($message->action->subscriber as $subscriber) {
                 $subscriberAttachInput->put($subscriber->id, ['status' => 'sent']);
             }
         }
@@ -161,26 +161,26 @@ class ProcessSyncedMessagesTest extends BaseTestCase
      */
     private function prepareInstanceOfSqsMessageWasSynced($subscriberCreateOptions = [])
     {
-        $firstQueue = factory(Queue::class)->create();
-        $secondQueue = factory(Queue::class)->create();
+        $firstaction = factory(Action::class)->create();
+        $secondaction = factory(Action::class)->create();
 
-        $messagesOnFirstQueue = factory(Message::class, 5)->create([
-            'queue_id' => $firstQueue->id,
+        $messagesOnFirstaction = factory(Message::class, 5)->create([
+            'action_id' => $firstaction->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
-        $messagesOnSecondQueue = factory(Message::class, 5)->create([
-            'queue_id' => $secondQueue->id,
+        $messagesOnSecondaction = factory(Message::class, 5)->create([
+            'action_id' => $secondaction->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
 
         $subscriberOne = factory(Subscriber::class, 3)->create($subscriberCreateOptions);
         $subscriberTwo = factory(Subscriber::class, 2)->create($subscriberCreateOptions);
 
-        $firstQueue->subscriber()->attach(collect($subscriberOne)->pluck('id')->toArray());
-        $secondQueue->subscriber()->attach(collect($subscriberTwo)->pluck('id')->toArray());
+        $firstaction->subscriber()->attach(collect($subscriberOne)->pluck('id')->toArray());
+        $secondaction->subscriber()->attach(collect($subscriberTwo)->pluck('id')->toArray());
 
-        $firstMessageIdList = $this->collectMessageIdsOnQueues($messagesOnFirstQueue);
-        $secondMessageIdList = $this->collectMessageIdsOnQueues($messagesOnSecondQueue);
+        $firstMessageIdList = $this->collectMessageIdsOnactions($messagesOnFirstaction);
+        $secondMessageIdList = $this->collectMessageIdsOnactions($messagesOnSecondaction);
 
         $messageIdList = array_merge($firstMessageIdList, $secondMessageIdList);
 
@@ -191,7 +191,7 @@ class ProcessSyncedMessagesTest extends BaseTestCase
      * @param array $messages
      * @return array
      */
-    private function collectMessageIdsOnQueues($messages)
+    private function collectMessageIdsOnactions($messages)
     {
         $messageIdList = [];
 
@@ -209,10 +209,10 @@ class ProcessSyncedMessagesTest extends BaseTestCase
      */
     private function buildToAssertIfEqualMessageInput($messageIdList, $status = 'sent')
     {
-        $messages = $this->message->findAllWhereIn('message_id', $messageIdList, ['queue']);
+        $messages = $this->message->findAllWhereIn('message_id', $messageIdList, ['action']);
         $subscriberAttachInput = collect([]);
         foreach ($messages as $message) {
-            foreach ($message->queue->subscriber as $subscriber) {
+            foreach ($message->action->subscriber as $subscriber) {
                 $subscriberAttachInput->put($subscriber->id, ['status' => $status]);
             }
         }

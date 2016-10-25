@@ -7,7 +7,11 @@ use App\Message;
 trait DifferMessageInputDataToDatabase
 {
     /**
-     * @param array $input
+     * [computeDifference Computes the difference of message id existing on database to fetched message_ids]
+     *
+     * Note that this is fetching all messages past 3 days.
+     *
+     * @param  array $input
      * @return array
      */
     public function computeDifference(array $input)

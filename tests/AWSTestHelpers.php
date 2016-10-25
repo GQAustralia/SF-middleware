@@ -23,6 +23,14 @@ trait AWSTestHelpers
     /**
      * @return string
      */
+    public function QUEUE_NAME_WITH_INVALID_MESSAGES_SAMPLE()
+    {
+        return 'SampleQueFromTestWithNoMessages';
+    }
+
+    /**
+     * @return string
+     */
     public function SUCCESS_RESPONSE_SITE()
     {
         return $this->getHostSite() . 'example-response/success';

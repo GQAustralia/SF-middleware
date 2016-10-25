@@ -1,7 +1,7 @@
 <?php
 
 use App\Message;
-use App\Queue;
+use App\Action;
 use App\Resolvers\MessageStatusResolver;
 use App\Subscriber;
 use App\Repositories\Eloquent\MessageRepositoryEloquent;
@@ -33,7 +33,7 @@ class MessageStatusResolverTest extends BaseTestCase
     /** @test */
     public function it_updates_message_status_to_complete_when_subscriber_url_are_all_sent()
     {
-        $queue = factory(Queue::class)->create();
+        $queue = factory(Action::class)->create();
         $message = factory(Message::class)->create(['queue_id' => $queue->id, 'completed' => 'N']);
 
         $subscriber = factory(Subscriber::class)->create();

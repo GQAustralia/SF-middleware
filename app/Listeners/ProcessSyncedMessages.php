@@ -66,7 +66,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      */
     public function handle(SqsMessagesWasSynced $event)
     {
-        $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['queue']);
+        $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['action']);
 
         collect($messages)->each(function ($message) {
             if ($this->hasSubscribers($message)) {
@@ -83,7 +83,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      */
     private function hasSubscribers(Message $message)
     {
-        return $message->queue->subscriber->count();
+        return $message->action->subscriber->count();
     }
 
     /**
@@ -93,7 +93,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     {
         $subscriberMessageLogs = collect([]);
 
-        collect($message->queue->subscriber)->each(function ($subscriber) use ($subscriberMessageLogs, $message) {
+        collect($message->action->subscriber)->each(function ($subscriber) use ($subscriberMessageLogs, $message) {
 
             $isValidUrl = $this->guardIsValidUrl($subscriber->url);
 

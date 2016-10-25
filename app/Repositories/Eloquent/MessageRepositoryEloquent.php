@@ -80,7 +80,7 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
      */
     public function insertIgnoreBulk(array $messages)
     {
-        $insertFields = ['message_id', 'queue_id', 'message_content', 'completed'];
+        $insertFields = ['message_id', 'action_id', 'message_content', 'completed'];
         $query = $this->resolve('message', $insertFields, $messages);
 
         return DB::affectingStatement($query);

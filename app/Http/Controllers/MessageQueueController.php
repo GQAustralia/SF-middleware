@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Jobs\Exceptions\AWSSQSServerException;
 use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
-use App\Jobs\Exceptions\EmptyQueuesException;
 use App\Jobs\Exceptions\InsertIgnoreBulkException;
 use App\Jobs\Exceptions\NoMessagesToSyncException;
+use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
 use App\Jobs\SyncAllAwsSqsMessagesJob;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -33,20 +33,21 @@ class MessageQueueController extends Controller
 
     /**
      * @param Request $request
+     * @param string $queue
      * @return \Illuminate\Http\Response
      */
-    public function sync(Request $request)
+    public function sync(Request $request, $queue)
     {
         try {
-            $this->dispatch(new SyncAllAwsSqsMessagesJob());
-        } catch (EmptyQueuesException $exc) {
-            return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
+            $this->dispatch(new SyncAllAwsSqsMessagesJob($queue));
         } catch (AWSSQSServerException $exc) {
             return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
         } catch (NoMessagesToSyncException $exc) {
             return $this->responseFactory->make($exc->getMessage(), self::SUCCESS_STATUS_CODE);
         } catch (DatabaseAlreadySyncedException $exc) {
             return $this->responseFactory->make($exc->getMessage(), self::SUCCESS_STATUS_CODE);
+        } catch (NoValidMessagesFromQueueException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
         } catch (InsertIgnoreBulkException $exc) {
             return $this->responseFactory->make($exc->getMessage(), self::INTERNAL_SERVER_ERROR_STATUS_CODE);
         } catch (QueryException $exc) {

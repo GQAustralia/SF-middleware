@@ -4,19 +4,19 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Queue extends Model
+class Action extends Model
 {
-    protected $table = 'queue';
+    protected $table = 'action';
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
-    protected $fillable = ['queue_name', 'aws_queue_name', 'arn'];
+    protected $fillable = ['name'];
 
     /**
-     * A Queue has many message.
+     * An ACtion has many message.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
@@ -26,7 +26,7 @@ class Queue extends Model
     }
 
     /**
-     * A Queue belongs to many subscriber.
+     * An Action belongs to many subscriber.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
