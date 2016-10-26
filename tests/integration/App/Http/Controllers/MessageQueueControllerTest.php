@@ -190,6 +190,7 @@ class MessageQueueControllerTest extends BaseTestCase
      * Deletes the newly created SQS Que and its messages.
      * This test should be placed always at the bottom of each tests.
      *
+     * @test
      * @coversNothing
      */
     public function RESET_SQS()
@@ -198,9 +199,11 @@ class MessageQueueControllerTest extends BaseTestCase
 
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
         $queueURLWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
+        $queueURLWithInvalidMessages = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_WITH_INVALID_MESSAGES_SAMPLE()])->get('QueueUrl');
 
         $queueURLResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueUrl]);
         $queueURLWithNoMessagesResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueURLWithNoMessages]);
+        $queueURLWithInvalidMessagesResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueURLWithInvalidMessages]);
 
         sleep(60);
 

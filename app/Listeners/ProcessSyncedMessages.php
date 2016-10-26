@@ -53,8 +53,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
         GuzzleClient $guzzleClient,
         MessageLogRepositoryInterface $messageLog,
         MessageStatusResolver $messageStatusResolver
-    )
-    {
+    ) {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
         $this->messageLog = $messageLog;

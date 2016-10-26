@@ -45,7 +45,7 @@ class SyncAllAwsSqsMessagesJob extends Job
     public function __construct($queueName = null, $messageVisibility = 2000)
     {
         $this->messageVisibility = $messageVisibility;
-        $this->queueName = $queueName ?? self::INBOUND_QUEUE;
+        $this->queueName = (is_null($queueName) ? self::INBOUND_QUEUE : $queueName);
     }
 
     /**
@@ -53,8 +53,11 @@ class SyncAllAwsSqsMessagesJob extends Job
      * @param ActionRepositoryInterface $action
      * @param MessageRepositoryInterface $message
      */
-    public function handle(SQSClientService $sqs, ActionRepositoryInterface $action, MessageRepositoryInterface $message)
-    {
+    public function handle(
+        SQSClientService $sqs,
+        ActionRepositoryInterface $action,
+        MessageRepositoryInterface $message
+    ) {
         $this->availableActionList = collect($action->all())->pluck('id', 'name')->all();
 
         $queueMessages = $this->collectQueueMessagesOrFail($sqs, $this->queueName);

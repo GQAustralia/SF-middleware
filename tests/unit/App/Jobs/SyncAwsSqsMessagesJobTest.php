@@ -99,7 +99,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     /** @test */
     public function it_throws_an_exception_when_queue_does_not_exist_in_aws()
     {
-        $this->expectException(AWSSQSServerException::class);
+        $this->setExpectedException(AWSSQSServerException::class);
 
         $this->setConnection('test_mysql_database');
         $action = factory(Action::class)->create(['name' => 'changed']);
@@ -110,10 +110,9 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     /**
      * @test
      */
-    public function it_throws_an_exception_when_messages_does_not_exist_in_a_queues()
+    public function it_throws_an_exception_when_messages_does_not_exist_in_a_queue()
     {
-        $this->expectException(NoMessagesToSyncException::class);
-        $this->expectExceptionMessage('No available Queues Messages for sync.');
+        $this->setExpectedException(NoMessagesToSyncException::class, 'No available Queues Messages for sync.');
 
         factory(Action::class)->create(['name' => 'changed']);
 
@@ -125,8 +124,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        $this->expectException(DatabaseAlreadySyncedException::class);
-        $this->expectExceptionMessage('Database already synced.');
+        $this->setExpectedException(DatabaseAlreadySyncedException::class, 'Database already synced.');
 
         sleep(10);
 
@@ -150,7 +148,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     /** @test */
     public function it_throws_an_exception_when_no_message_is_valid_for_insert()
     {
-        $this->expectException(NoValidMessagesFromQueueException::class);
+        $this->setExpectedException(NoValidMessagesFromQueueException::class);
 
         $this->setConnection('test_mysql_database');
 
@@ -166,6 +164,8 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         ])->get('MessageId');
 
         $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+
+        sleep(5);
     }
 
     /** @test */
@@ -183,6 +183,8 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             'QueueUrl' => $queueUrl,
             'MessageBody' => 'invalidSalesForceMessageBody'
         ])->get('MessageId');
+
+        sleep(5);
 
         $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
 
@@ -275,7 +277,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
      */
     public function it_throws_an_exception_on_database_query_errors()
     {
-        $this->expectException(QueryException::class);
+        $this->setExpectedException(QueryException::class);
 
         $this->setConnection('test_mysql_database');
         $this->artisan('migrate:rollback');
@@ -288,7 +290,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     /** @test */
     public function it_throws_an_error_on_saving_to_database_if_any_database_related_exception_occurs()
     {
-        $this->expectException(InsertIgnoreBulkException::class);
+        $this->setExpectedException(InsertIgnoreBulkException::class);
 
         $this->setConnection('test_mysql_database');
 
@@ -311,6 +313,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
      * Deletes the newly created SQS Que and its messages.
      * This test should be placed always at the bottom of each tests.
      *
+     * @test
      * @coversNothing
      */
     public function RESET_SQS()
@@ -323,7 +326,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $queueUrlResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueUrl]);
         $queueUrlWithNoMessagesResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueUrlWithNoMessages]);
 
-        sleep(60);
+        //sleep(60);
 
         $this->assertInstanceOf(Result::class, $queueUrlResult);
         $this->assertInstanceOf(Result::class, $queueUrlWithNoMessagesResult);

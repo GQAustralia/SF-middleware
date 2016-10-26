@@ -1,5 +1,6 @@
 <?php
 
 return [
-    'testing' => 'http://gq-message-queuing-service.dev/'
+    'testing' => 'http://sfmessenger.gqaustralia.com.au/',
+    'local' => 'http://gq-message-queuing-service.dev/'
 ];

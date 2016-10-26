@@ -58,7 +58,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
         $message = factory(Message::class)->create(['action_id' => $action->id]);
         $input = factory(Message::class)->make(['action_id' => $action->id, 'message_id' => $message->message_id]);
 
-        $this->expectException(DuplicateRecordsException::class);
+        $this->setExpectedException(DuplicateRecordsException::class);
 
         $this->repository->create($input->toArray());
     }
@@ -153,10 +153,9 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     /** @test */
     public function it_throws_exception_on_attach_subscriber_when_input_subscriber_is_empty()
     {
-        $this->expectException(FailedSyncManyToMany::class);
-        $this->expectExceptionMessage('Subscribers does not exist.');
+        $this->setExpectedException(FailedSyncManyToMany::class, 'Subscribers does not exist.');
 
-        $action = factory(Action::class)->create();
+        $action = factory(Action::class)->create(['name' => 'changed']);
         $message = factory(Message::class)->create(['action_id' => $action->id]);
 
         $this->repository->attachSubscriber($message, []);
@@ -165,8 +164,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     /** @test */
     public function it_throws_exception_on_attach_subscriber_when_message_does_not_exist()
     {
-        $this->expectException(FailedSyncManyToMany::class);
-        $this->expectExceptionMessage('Message does not exist.');
+        $this->setExpectedException(FailedSyncManyToMany::class, 'Message does not exist.');
 
         $subscribers = factory(Subscriber::class, 2)->create();
         $input = collect($subscribers)->map(function ($subscriber) {
@@ -265,14 +263,16 @@ class MessageRepositoryEloquentTest extends BaseTestCase
 
         $messageIds = collect($message->toArray())->pluck('message_id');
 
-        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['action'], ['action_id' => $action->id]);
+        $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['action'],
+            ['action_id' => $action->id]);
 
         $this->assertInstanceOf(Action::class, $result[0]->action);
         $this->assertInstanceOf(Subscriber::class, $result[0]->action->subscriber[0]);
     }
 
     /** @test */
-    public function it_returns_an_empty_collection_on_using_wherein_and_optional_where_when_optional_where_is_not_found()
+    public function it_returns_an_empty_collection_on_using_wherein_and_optional_where_when_optional_where_is_not_found(
+    )
     {
         $action = factory(Action::class)->create();
         $message = factory(Message::class, 5)->create(['action_id' => $action->id]);
