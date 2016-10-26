@@ -24,26 +24,44 @@ class OutboundSalesforceService {
 
     public function sendToSalesforce($message, $attributes = array()) {
 
-        print_r($attributes);
-        $xml = new \SimpleXMLElement($message);
-
-        $converter = new XmlToJson\XmlToJsonConverter();
-        $json = $converter->convert($xml);
-        $jsonArray = \GuzzleHttp\json_decode($json);
-        echo '<pre>';
-        print_r($jsonArray);
-        echo $json;
-        exit();
-        try {
-            echo print_r(Salesforce::describeLayout('Account'), true);
-        } catch (\Exception $e) {
-            echo $e->getMessage();
-            echo $e->getTraceAsString();
-        }
+        $a = config("salesforceZohoMap.token");
+        $module = isset($attributes["module"])?$attributes["module"]:false;
+        $processedData = $this->processMessage($module, $message);
+        $mapedObject = $this->mapData($module,$processedData);
+//        try {
+//            echo print_r(Salesforce::describeLayout('Account'), true);
+//        } catch (\Exception $e) {
+//            echo $e->getMessage();
+//            echo $e->getTraceAsString();
+//        }
     }
 
-    private function processMessage() {
+    private function processMessage($module, $message) {
         
+        $xml = new \SimpleXMLElement($message);
+        
+        $converter = new XmlToJson\XmlToJsonConverter();
+        $json = $converter->convert($xml);
+        $jsonArray = \GuzzleHttp\json_decode($json,true);
+        $objectArray = array();
+        if($module && isset($message[$module]) && isset($message[$module]["row"]) && isset($message[$module]["row"]["FL"])){
+            
+            $dataArray =  $message[$module]["row"]["FL"];
+            
+            foreach ($dataArray as $data) {
+                
+                $objectArray[$data["-val"]] = $objectArray[$data["#text"]];
+            }
+        }
+        
+        return $objectArray;
+    }
+    
+    private function mapData($module,$data){
+        $map = config("salesforceZohoMap.$module");
+        if(!empty($map)){
+            
+        }
     }
 
     private function processInsert() {
