@@ -2,6 +2,8 @@
 
 namespace App\Events;
 
+use App\Message;
+
 class ExampleEvent extends Event
 {
     /**
@@ -11,6 +13,5 @@ class ExampleEvent extends Event
      */
     public function __construct()
     {
-        //
     }
 }
