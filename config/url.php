@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'testing' => 'http://sf-middleware.com/'
+    'testing' => 'http://gq-message-queuing-service.dev/'
 ];

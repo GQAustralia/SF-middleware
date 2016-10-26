@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Laravel\Lumen\Exceptions\Handler as ExceptionHandler;
 
+/**
+ * @codeCoverageIgnore
+ */
 class Handler extends ExceptionHandler
 {
     /**

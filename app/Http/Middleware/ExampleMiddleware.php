@@ -4,6 +4,9 @@ namespace App\Http\Middleware;
 
 use Closure;
 
+/**
+ * @codeCoverageIgnore
+ */
 class ExampleMiddleware
 {
     /**

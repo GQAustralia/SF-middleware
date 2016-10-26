@@ -23,6 +23,11 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     private $listener;
 
     /**
+     * @var MessageLogRepositoryEloquent
+     */
+    private $messageLog;
+
+    /**
      *
      */
     public function setUp()
@@ -84,8 +89,8 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     /** @test */
     public function it_does_not_add_to_attach_if_there_is_no_associated_subscriber_on_message_action()
     {
-        $firstaction = factory(Action::class)->create();
-        $secondaction = factory(Action::class)->create();
+        $firstaction = factory(Action::class)->create(['name' => 'changed']);
+        $secondaction = factory(Action::class)->create(['name' => 'changed']);
         $messagesOnFirstaction = factory(Message::class, 5)->create([
             'action_id' => $firstaction->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
@@ -123,7 +128,7 @@ class ProcessSyncedMessagesTest extends BaseTestCase
     //to test unserialized input
     public function it_receives_the_unserialized_form_input()
     {
-        $action = factory(Action::class)->create();
+        $action = factory(Action::class)->create(['name' => 'changed']);
         $message = factory(Message::class)->create([
             'action_id' => $action->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
@@ -161,8 +166,8 @@ class ProcessSyncedMessagesTest extends BaseTestCase
      */
     private function prepareInstanceOfSqsMessageWasSynced($subscriberCreateOptions = [])
     {
-        $firstaction = factory(Action::class)->create();
-        $secondaction = factory(Action::class)->create();
+        $firstaction = factory(Action::class)->create(['name' => 'changed']);
+        $secondaction = factory(Action::class)->create(['name' => 'changed']);
 
         $messagesOnFirstaction = factory(Message::class, 5)->create([
             'action_id' => $firstaction->id,
