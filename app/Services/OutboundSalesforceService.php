@@ -24,7 +24,6 @@ class OutboundSalesforceService {
 
     public function sendToSalesforce($message, $attributes = array()) {
 
-        $a = config("salesforceZohoMap.token");
         $module = isset($attributes["module"])?$attributes["module"]:false;
         $processedData = $this->processMessage($module, $message);
         $mapedObject = $this->mapData($module,$processedData);
@@ -45,11 +44,8 @@ class OutboundSalesforceService {
         $jsonArray = \GuzzleHttp\json_decode($json,true);
         $objectArray = array();
         if($module && isset($message[$module]) && isset($message[$module]["row"]) && isset($message[$module]["row"]["FL"])){
-            
-            $dataArray =  $message[$module]["row"]["FL"];
-            
-            foreach ($dataArray as $data) {
-                
+            $dataArray =  $message[$module]["row"]["FL"]; 
+            foreach ($dataArray as $data) {   
                 $objectArray[$data["-val"]] = $objectArray[$data["#text"]];
             }
         }
