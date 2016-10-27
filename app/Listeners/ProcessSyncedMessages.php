@@ -9,7 +9,6 @@ use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\MessageStatusResolver;
 use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
-use App\Subscriber;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -65,15 +64,18 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      */
     public function handle(SqsMessagesWasSynced $event)
     {
+        $messagesForResolve = [];
+
         $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['action']);
 
         collect($messages)->each(function ($message) {
             if ($this->hasSubscribers($message)) {
                 $this->handleMessageSubscribers($message);
+                $messagesForResolve[] = $message->id;
             }
         });
 
-        $this->messageStatusResolver->resolve($event->messageIdList);
+        $this->messageStatusResolver->resolve($messagesForResolve);
     }
 
     /**
