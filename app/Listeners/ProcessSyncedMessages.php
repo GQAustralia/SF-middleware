@@ -71,7 +71,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
         collect($messages)->each(function ($message) {
             if ($this->hasSubscribers($message)) {
                 $this->handleMessageSubscribers($message);
-                $messagesForResolve[] = $message->id;
+                $messagesForResolve[] = $message->message_id;
             }
         });
 
