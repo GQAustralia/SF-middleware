@@ -1,7 +1,7 @@
 <?php
 
-use App\Message;
 use App\Action;
+use App\Message;
 use App\Subscriber;
 
 class ActionTest extends TestCase

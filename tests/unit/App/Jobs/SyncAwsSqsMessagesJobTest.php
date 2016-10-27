@@ -32,33 +32,6 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $this->withoutEvents();
     }
 
-    /**
-     * Setup a SQS que and messages inside it.
-     *
-     * To create will wait 60secs after delete.
-     *
-     * @coversNothing
-     * @test
-     */
-    public function SET_UP_SQS()
-    {
-        try {
-            $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
-            $queueUrl = $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
-
-            $this->message = $this->sqs->client()->sendMessage(array(
-                'QueueUrl' => $queueUrl,
-                'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
-            ));
-
-        } catch (SqsException $exception) {
-            echo "ERROR: SET_UP_SQS method" . PHP_EOL;
-            die($this->extractSQSMessage($exception->getMessage()));
-        }
-
-        $this->assertTrue(true, true);
-    }
-
     /** @test */
     public function it_stores_aws_queues_messages_to_messages_table()
     {
@@ -91,9 +64,48 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $this->seeInDatabase('message', [
             'message_id' => $message['MessageId'],
             'action_id' => $action->id,
-            'message_content' => $message['Body'],
+            'message_content' => str_replace('"', '\'', $message['Body']),
             'completed' => 'N'
         ]);
+    }
+
+    /**
+     * Setup a SQS que and messages inside it.
+     *
+     * To create will wait 60secs after delete.
+     *
+     * @coversNothing
+     * @test
+     */
+    public function SET_UP_SQS()
+    {
+        try {
+            $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
+            $queueUrl = $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
+
+            $this->message = $this->sqs->client()->sendMessage(array(
+                'QueueUrl' => $queueUrl,
+                'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
+            ));
+
+        } catch (SqsException $exception) {
+            echo "ERROR: SET_UP_SQS method" . PHP_EOL;
+            die($this->extractSQSMessage($exception->getMessage()));
+        }
+
+        $this->assertTrue(true, true);
+    }
+
+    /**
+     * @param $message
+     * @return string
+     */
+    private function extractSQSMessage($message)
+    {
+        $message = explode('<Message>', $message);
+        $message = explode('</Message>', $message[1]);
+
+        return reset($message);
     }
 
     /** @test */
@@ -143,6 +155,19 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         sleep(30);
 
         $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), 30));
+    }
+
+    /**
+     * @param string $url
+     * @return mixed
+     */
+    private function getAQueueMessage($url, $visibilityTimeout = 30)
+    {
+        $message = $this->sqs->client()
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
+            ->get('Messages');
+
+        return array_first($message);
     }
 
     /** @test */
@@ -218,6 +243,11 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
     }
 
+    private function messageWithoutOp()
+    {
+        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
+    }
+
     /** @test */
     public function it_does_not_insert_when_message_op_field_is_empty()
     {
@@ -245,6 +275,11 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
     }
 
+    private function messageWithBlankOp()
+    {
+        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:0:'';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
+    }
+
     /** @test */
     public function it_does_not_insert_when_message_op_field_is_not_valid()
     {
@@ -270,6 +305,11 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
+    }
+
+    private function messageWithInvalidOp()
+    {
+        return '{"amount":"2177","assessor":"696292000018247009","op":"invalidOp","status":"Open","rto":"31718","token":"fb706b1e933ef01e4fb6","mb":"","qual":"Certificate of blahblah","cost":"350","cid":"696292000014545306","cname":"Kylie Drost"}';
     }
 
     /**
@@ -330,45 +370,5 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $this->assertInstanceOf(Result::class, $queueUrlResult);
         $this->assertInstanceOf(Result::class, $queueUrlWithNoMessagesResult);
-    }
-
-    /**
-     * @param $message
-     * @return string
-     */
-    private function extractSQSMessage($message)
-    {
-        $message = explode('<Message>', $message);
-        $message = explode('</Message>', $message[1]);
-
-        return reset($message);
-    }
-
-    /**
-     * @param string $url
-     * @return mixed
-     */
-    private function getAQueueMessage($url, $visibilityTimeout = 30)
-    {
-        $message = $this->sqs->client()
-            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
-            ->get('Messages');
-
-        return array_first($message);
-    }
-
-    private function messageWithoutOp()
-    {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
-    }
-
-    private function messageWithBlankOp()
-    {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:0:'';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
-    }
-
-    private function messageWithInvalidOp()
-    {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:13:'nonexistingop';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
     }
 }

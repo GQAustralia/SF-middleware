@@ -1,12 +1,11 @@
 <?php
 
-use Illuminate\Database\Seeder;
 use App\Action;
+use App\Subscriber;
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use FacilitatorPerformanceSeederHelper;
-
     /**
      * Run the database seeds.
      *
@@ -14,28 +13,84 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        foreach($this->getFacilitatorPerformanceData() as $action=>$subscribers){
-            $action = $this->createAction($action);
-            $this->attachSubscribersToAction($action, $subscribers);
+        Subscriber::insert($this->subscriberData());
+
+        foreach ($this->getFacilitators() as $facilitator) {
+            $action = Action::create(['name' => $facilitator]);
+            $action->subscriber()->attach(1);
+        }
+
+        foreach ($this->getQualifications() as $facilitator) {
+            $action = Action::create(['name' => $facilitator]);
+            $action->subscriber()->attach(2);
+        }
+
+        foreach ($this->getSalesPerformance() as $facilitator) {
+            $action = Action::create(['name' => $facilitator]);
+            $action->subscriber()->attach(3);
         }
     }
 
-    private function createAction($action)
+    private function subscriberData()
     {
-        $actionId = DB::table('action')->insertGetId(['name' => $action]);
-        $actionData = DB::table('action')->where('id', $actionId)->first();
-        return new Action(json_decode(json_encode($actionData), true));
+        $date = date('Y-m-d');
+
+        return [
+            [
+                'platform_name' => 'facilitator-performance',
+                'url' => 'http://52.65.121.177/facilitator-performance/queue_message_receiver_handler.php',
+                'created_at' => $date,
+                'updated_at' => $date
+            ],
+            [
+                'platform_name' => 'qualification-platform',
+                'url' => 'http://52.65.121.177/qualification-platform/queue_message_receiver_handler.php',
+                'created_at' => $date,
+                'updated_at' => $date
+            ],
+            [
+                'platform_name' => 'sales-performance',
+                'url' => 'http://52.65.121.177/sales-performance/queue_message_receiver_handler.php',
+                'created_at' => $date,
+                'updated_at' => $date
+            ],
+            [
+                'platform_name' => 'transaction-system-cba',
+                'url' => 'http://52.65.121.177/transaction-system-cba/queue_message_receiver_handler.php',
+                'created_at' => $date,
+                'updated_at' => $date
+            ]
+        ];
     }
 
-    private function attachSubscribersToAction(Action $action, $subscribers)
+    /**
+     * @return array
+     */
+    public function getFacilitators()
     {
-        foreach ($subscribers as $subscriber) {
-            $subscriberId = DB::table('subscriber')->insertGetId([
-                'platform_name' => $subscriber['platform_name'],
-                'url' => $subscriber['url']
-            ]);
+        return ['rto_performance', 'changed', 'submitted'];
+    }
 
-            $action->subscriber()->attach($subscriberId);
-        }
+    /**
+     * @return array
+     */
+    public function getQualifications()
+    {
+        return ['enforce_cost', 'rto_selection'];
+    }
+
+    /**
+     * @return array
+     */
+    public function getSalesPerformance()
+    {
+        return [
+            'enforce_rto',
+            'not_proceeding',
+            'register_sales',
+            'rpl_completed',
+            'update_amount',
+            'update_refund'
+        ];
     }
 }

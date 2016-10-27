@@ -1,7 +1,7 @@
 <?php
 
-use App\Message;
 use App\Action;
+use App\Message;
 use App\Repositories\Eloquent\MessageRepositoryEloquent;
 use App\Repositories\Exceptions\DuplicateRecordsException;
 use App\Repositories\Exceptions\FailedSyncManyToMany;
@@ -181,8 +181,10 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
+        $dateNow = date('Y-m-d');
+
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 2)->make(['action_id' => $action->id]);
+        $message = factory(Message::class, 2)->make(['action_id' => $action->id, 'created_at' => $dateNow, 'updated_at' => $dateNow]);
 
         $result = $this->repository->insertIgnoreBulk($message->toArray());
 
@@ -195,13 +197,17 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        $action = factory(Action::class)->create();
-        $existingMessage = factory(Message::class, 2)->create(['action_id' => $action->id]);
+        $dateNow = date('Y-m-d');
 
-        $result = collect($existingMessage)->map(function ($message) use ($action) {
+        $action = factory(Action::class)->create();
+        $existingMessage = factory(Message::class, 2)->create(['action_id' => $action->id, 'created_at' => $dateNow, 'updated_at' => $dateNow]);
+
+        $result = collect($existingMessage)->map(function ($message) use ($action, $dateNow) {
             return factory(Message::class)->make([
                 'action_id' => $action->id,
-                'message_id' => $message->message_id
+                'message_id' => $message->message_id,
+                'created_at' => $dateNow,
+                'updated_at' => $dateNow
             ])->toArray();
         })->toArray();
 
@@ -271,8 +277,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_returns_an_empty_collection_on_using_wherein_and_optional_where_when_optional_where_is_not_found(
-    )
+    public function it_returns_an_empty_collection_on_using_wherein_and_optional_where_when_optional_where_is_not_found()
     {
         $action = factory(Action::class)->create();
         $message = factory(Message::class, 5)->create(['action_id' => $action->id]);

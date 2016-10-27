@@ -57,7 +57,7 @@ trait AWSTestHelpers
      */
     public function SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
     {
-        return '{"id":"a0Cp0000002BpDVEA0","active":"Open","created":"2016-06-29T14:16:00.000Z","cname":"Aaron Hockey","assessor":"0052800000388EyAAI","cid":"zcrm_696292000030905095","stage":"Portfolio Submitted To RTO","qual":"01tp0000002UOnyAAG","qual_amount":"2700.0","fstage":"On Payment Plan","op":"changed"}';
+        return '{"amount":"2177","assessor":"696292000018247009","op":"changed","status":"Open","rto":"31718","token":"fb706b1e933ef01e4fb6","mb":"","qual":"Certificate of blahblah","cost":"350","cid":"696292000014545306","cname":"Kylie Drost"}';
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\MessageStatusResolver;
 use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
+use App\Subscriber;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -52,7 +53,8 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
         GuzzleClient $guzzleClient,
         MessageLogRepositoryInterface $messageLog,
         MessageStatusResolver $messageStatusResolver
-    ) {
+    )
+    {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
         $this->messageLog = $messageLog;
@@ -150,6 +152,10 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
         return $this->guzzleClient->post($url, $formParams);
     }
 
+    /**
+     * @param string $message
+     * @return string
+     */
     private function cleanMessageContentForSending($message)
     {
         return str_replace('\'', '"', $message);

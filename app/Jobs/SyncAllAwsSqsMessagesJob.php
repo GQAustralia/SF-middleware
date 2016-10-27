@@ -57,7 +57,8 @@ class SyncAllAwsSqsMessagesJob extends Job
         SQSClientService $sqs,
         ActionRepositoryInterface $action,
         MessageRepositoryInterface $message
-    ) {
+    )
+    {
         $this->availableActionList = collect($action->all())->pluck('id', 'name')->all();
 
         $queueMessages = $this->collectQueueMessagesOrFail($sqs, $this->queueName);
@@ -164,8 +165,10 @@ class SyncAllAwsSqsMessagesJob extends Job
      */
     private function buildMessagesPayloadForInsertOrFail($messages)
     {
+        $dateNow = date('Y-m-d');
+
         $result = collect($messages)
-            ->map(function ($message) {
+            ->map(function ($message) use ($dateNow){
 
                 $messageContent = $this->validateMessageContent($message['Body']);
 
@@ -174,7 +177,9 @@ class SyncAllAwsSqsMessagesJob extends Job
                         'message_id' => $message['MessageId'],
                         'action_id' => $this->getActionIdFromMessageContent($message['Body']),
                         'message_content' => $this->cleanMessageContentForInsert($message['Body']),
-                        'completed' => 'N'
+                        'completed' => 'N',
+                        'create_at' => $dateNow,
+                        'updated_at' => $dateNow
                     ];
                 }
             })->reject(function ($message) {
@@ -199,6 +204,10 @@ class SyncAllAwsSqsMessagesJob extends Job
         return $this->availableActionList[$messageContent['op']];
     }
 
+    /**
+     * @param string $message
+     * @return string
+     */
     private function cleanMessageContentForInsert($message)
     {
         return str_replace('"', '\'', $message);
@@ -212,7 +221,7 @@ class SyncAllAwsSqsMessagesJob extends Job
     {
         $decodedMessage = json_decode($messageContent, true);
 
-        if(!$decodedMessage) {
+        if (!$decodedMessage) {
             return false;
         }
 

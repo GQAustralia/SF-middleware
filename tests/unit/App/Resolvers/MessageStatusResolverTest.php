@@ -1,10 +1,10 @@
 <?php
 
-use App\Message;
 use App\Action;
+use App\Message;
+use App\Repositories\Eloquent\MessageRepositoryEloquent;
 use App\Resolvers\MessageStatusResolver;
 use App\Subscriber;
-use App\Repositories\Eloquent\MessageRepositoryEloquent;
 
 class MessageStatusResolverTest extends BaseTestCase
 {

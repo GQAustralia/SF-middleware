@@ -117,6 +117,32 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertEquals('Database already synced.', $this->getContent());
     }
 
+    /**
+     * @param string $message
+     * @return string
+     */
+    private function extractSQSMessage($message)
+    {
+        $message = explode('<Message>', $message);
+        $message = explode('</Message>', $message[1]);
+
+        return reset($message);
+    }
+
+    /**
+     * @param string $url
+     * @param int $visibilityTimeout
+     * @return mixed
+     */
+    private function getAQueueMessage($url, $visibilityTimeout = 15)
+    {
+        $message = $this->sqs->client()
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
+            ->get('Messages');
+
+        return array_first($message);
+    }
+
     /** @test */
     public function it_returns_an_invalid_response_on_database_insert_error()
     {
@@ -209,31 +235,5 @@ class MessageQueueControllerTest extends BaseTestCase
 
         $this->assertInstanceOf(Result::class, $queueURLResult);
         $this->assertInstanceOf(Result::class, $queueURLWithNoMessagesResult);
-    }
-
-    /**
-     * @param string $message
-     * @return string
-     */
-    private function extractSQSMessage($message)
-    {
-        $message = explode('<Message>', $message);
-        $message = explode('</Message>', $message[1]);
-
-        return reset($message);
-    }
-
-    /**
-     * @param string $url
-     * @param int $visibilityTimeout
-     * @return mixed
-     */
-    private function getAQueueMessage($url, $visibilityTimeout = 15)
-    {
-        $message = $this->sqs->client()
-            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
-            ->get('Messages');
-
-        return array_first($message);
     }
 }
