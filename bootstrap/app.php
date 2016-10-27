@@ -104,7 +104,7 @@ $app->group(['namespace' => 'App\Http\Controllers'], function ($app) {
 
 $app->configure('aws');
 $app->configure('url');
-$app->configure('salesforceZohoMap');
+$app->configure('salesforcezohomap');
 class_alias('Davispeixoto\Laravel5Salesforce\SalesforceFacade', 'Salesforce');
 
 return $app;

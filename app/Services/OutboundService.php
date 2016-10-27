@@ -52,7 +52,7 @@ class OutboundService implements AWSClientInterface
                 'QueueName' => $this->outboundQueue
             ]);
              $this->queueURI = $result->get('QueueUrl');
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             echo $ex->getMessage();
         }
     }
@@ -66,7 +66,7 @@ class OutboundService implements AWSClientInterface
              $messages = $result->get('Messages');
              if(count($messages)>0) return $messages;
              return false;
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             echo $ex->getMessage();
             return false;
         }
