@@ -11,7 +11,7 @@ use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
 use App\Repositories\Contracts\ActionRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\DifferMessageInputDataToDatabase;
-use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
+use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 use App\Services\SQSClientService;
 use Aws\Sqs\Exception\SqsException;
 use Illuminate\Database\QueryException;
@@ -20,7 +20,7 @@ class SyncAllAwsSqsMessagesJob extends Job
 {
     const INBOUND_QUEUE = 'CRMInwardQueue';
 
-    use DifferMessageInputDataToDatabase, ProvidesUnSerializationOfSalesForceMessages;
+    use DifferMessageInputDataToDatabase, ProvidesDecodingOfSalesForceMessages;
 
     /**
      * @var int
@@ -62,7 +62,7 @@ class SyncAllAwsSqsMessagesJob extends Job
 
         $queueMessages = $this->collectQueueMessagesOrFail($sqs, $this->queueName);
         $filteredQueueMessages = $this->removeDuplicateAndValidateIfDatabaseSynced($queueMessages);
-        $messagesForInsert = $this->buildMessagePayloadForInsertOrFail($filteredQueueMessages);
+        $messagesForInsert = $this->buildMessagesPayloadForInsertOrFail($filteredQueueMessages);
 
         $this->insertBulkMessagesOrFail($message, $messagesForInsert);
 
@@ -158,22 +158,22 @@ class SyncAllAwsSqsMessagesJob extends Job
     }
 
     /**
-     * @param string $message
+     * @param array $messages
      * @return array
      * @throws NoValidMessagesFromQueueException
      */
-    private function buildMessagePayloadForInsertOrFail($message)
+    private function buildMessagesPayloadForInsertOrFail($messages)
     {
-        $result = collect($message)
+        $result = collect($messages)
             ->map(function ($message) {
 
-                $messageContent = $this->validateAndSerializeMessageContent($message['Body']);
+                $messageContent = $this->validateMessageContent($message['Body']);
 
                 if ($messageContent) {
                     return [
                         'message_id' => $message['MessageId'],
-                        'action_id' => $this->getActionIdFromMessageContent($messageContent),
-                        'message_content' => $messageContent,
+                        'action_id' => $this->getActionIdFromMessageContent($message['Body']),
+                        'message_content' => $this->cleanMessageContentForInsert($message['Body']),
                         'completed' => 'N'
                     ];
                 }
@@ -194,37 +194,41 @@ class SyncAllAwsSqsMessagesJob extends Job
      */
     private function getActionIdFromMessageContent($messageContent)
     {
-        $messageContent = $this->unSerializeSalesForceMessage($messageContent);
+        $messageContent = $this->deCodeSalesForceMessage($messageContent);
 
         return $this->availableActionList[$messageContent['op']];
+    }
+
+    private function cleanMessageContentForInsert($message)
+    {
+        return str_replace('"', '\'', $message);
     }
 
     /**
      * @param string $messageContent
      * @return bool|string
      */
-    private function validateAndSerializeMessageContent($messageContent)
+    private function validateMessageContent($messageContent)
     {
-        $messageContent = str_replace('"', '\'', $messageContent);
-        $unserializedMessage = @unserialize(str_replace('\'', '"', $messageContent));
+        $decodedMessage = json_decode($messageContent, true);
 
-        if (!$unserializedMessage) {
+        if(!$decodedMessage) {
             return false;
         }
 
-        if (!array_key_exists('op', $unserializedMessage)) {
+        if (!array_key_exists('op', $decodedMessage)) {
             return false;
         }
 
-        if ($unserializedMessage['op'] == '') {
+        if ($decodedMessage['op'] == '') {
             return false;
         }
 
-        if (!array_key_exists($unserializedMessage['op'], $this->availableActionList)) {
+        if (!array_key_exists($decodedMessage['op'], $this->availableActionList)) {
             return false;
         }
 
-        return $messageContent;
+        return true;
     }
 
     /**

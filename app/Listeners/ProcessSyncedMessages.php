@@ -8,13 +8,13 @@ use App\Message;
 use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\MessageStatusResolver;
-use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
+use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 {
-    use ProvidesUnSerializationOfSalesForceMessages;
+    use ProvidesDecodingOfSalesForceMessages;
 
     const SENT = 'sent';
     const FAILED = 'failed';
@@ -68,7 +68,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 
         $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['action']);
 
-        collect($messages)->each(function ($message) {
+        collect($messages)->each(function ($message) use (&$messagesForResolve) {
             if ($this->hasSubscribers($message)) {
                 $this->handleMessageSubscribers($message);
                 $messagesForResolve[] = $message->message_id;
@@ -144,10 +144,15 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     {
         $formParams = array_merge(
             ['http_errors' => false],
-            ['form_params' => $this->unSerializeSalesForceMessage($message)]
+            ['form_params' => $this->deCodeSalesForceMessage($this->cleanMessageContentForSending($message))]
         );
 
         return $this->guzzleClient->post($url, $formParams);
+    }
+
+    private function cleanMessageContentForSending($message)
+    {
+        return str_replace('\'', '"', $message);
     }
 
     /**

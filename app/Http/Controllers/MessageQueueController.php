@@ -12,6 +12,10 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Laravel\Lumen\Http\ResponseFactory;
 
+/**
+ * Class MessageQueueController
+ * @package App\Http\Controllers
+ */
 class MessageQueueController extends Controller
 {
     const DATABASE_ERROR_MESSAGE = 'Database error please contact your Administrator.';
@@ -33,8 +37,8 @@ class MessageQueueController extends Controller
 
     /**
      * @param Request $request
-     * @param string $queue
-     * @return \Illuminate\Http\Response
+     * @param $queue
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function sync(Request $request, $queue)
     {

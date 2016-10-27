@@ -1,10 +1,10 @@
 <?php
 
-use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
+use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 
-class ProvidesUnSerializationOfSalesForceMessagesTest extends BaseTestCase
+class ProvidesDecodingOfSalesForceMessagesTest extends BaseTestCase
 {
-    use ProvidesUnSerializationOfSalesForceMessages;
+    use ProvidesDecodingOfSalesForceMessages;
 
     /** @test */
     public function it_unserialize_message()
@@ -31,6 +31,6 @@ class ProvidesUnSerializationOfSalesForceMessagesTest extends BaseTestCase
      */
     private function sampleSalesForceMessage()
     {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:7:'changed';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
+        return '{"id":"a0Cp0000002BpDVEA0","active":"Open","created":"2016-06-29T14:16:00.000Z","cname":"Aaron Hockey","assessor":"0052800000388EyAAI","cid":"zcrm_696292000030905095","stage":"Portfolio Submitted To RTO","qual":"01tp0000002UOnyAAG","qual_amount":"2700.0","fstage":"On Payment Plan","op":"changed"}';
     }
 }
