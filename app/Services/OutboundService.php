@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Resolvers\ProvidesAWSConnectionParameters;
 use Aws\Sqs\SqsClient;
-use App\Services\OutboundZOHOService;
+use App\Services\OutboundSalesforceService;
 
 class OutboundService implements AWSClientInterface
 {
@@ -85,8 +85,19 @@ class OutboundService implements AWSClientInterface
                     }
                 }
                $response = $OutboundSalesforceService->sendToSalesforce($xml,$attributes);
-               var_dump($response);
+               if($response){
+                   $mid = $message['MessageId'];
+                   $reciptHandles = $message['ReceiptHandle'];
+                   $result = $client->deleteMessage(array(
+                        // QueueUrl is required
+                        'QueueUrl' => $this->queueURI,
+                        // ReceiptHandle is required
+                        'ReceiptHandle' => $reciptHandles,
+                    ));
+               }
+               
             }
+            $this->sendMessagesToSalesforce();
         }
         
     }
