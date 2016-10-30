@@ -56,8 +56,55 @@ class OutboundSalesforceService {
     private function mapData($module,$data){
         $map = config("salesforceZohoMap.$module");
         if(!empty($map)){
-            
+            $objectName = $map['object'];
+            $parents = $map['parentObjects'];
+            $childs = $map['childObjects'];
+            $objectFileds = $map['fields'];
+            $defaults = $map['default'];
+            $salesForceObject = new \stdClass();
+            foreach($defaults as $val => $default) {
+                $salesForceObject->$default = (array_search($default) !== false)?$data[array_search($default)]:$val;
+            }
+            foreach($parents as $parent) {
+                $parentObjectName = $parent['object'];
+                $parentObject = new \stdClass();
+                $fields = $parent['fields'];
+                $relations = $parent['relations'];
+                $cond = [];
+                $select = [];
+                foreach ($fields as $name => $field) {
+                    $select[$name] = $field;
+                }
+                foreach ($relations as $name => $relation) {
+                    $cond[$relation] = $data[$name];
+                }
+                $parentResponse = $this->processFetch($parentObjectName, $cond, $select);
+                foreach($parentResponse as $pr) {
+                    foreach($select as $name => $sel) {
+                        $data[$name] = $sel;
+                    }
+                }
+            }
+            foreach($data as $key=>$val){
+                if(isset($objectFileds[$key]))
+                $salesForceObject->$objectFileds[$key] = $val;
+            }
+            $objectId = $this->processObject($salesForceObject);
+            foreach($childs as $child) {
+                $childObjectName = $parent['object'];
+                $childObject = new \stdClass();
+                $fields = $child['fields'];
+                $relations = $child['relations'];
+                $cond = [];
+                $select = [];
+                
+            }
         }
+    }
+    
+    
+    private function processObject($salesForceObject) {
+        
     }
 
     private function processInsert() {
@@ -68,7 +115,7 @@ class OutboundSalesforceService {
         
     }
 
-    private function processFetch() {
+    private function processFetch($objectName,$cond,$select='all') {
         
     }
 
