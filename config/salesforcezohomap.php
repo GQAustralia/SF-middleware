@@ -12,8 +12,8 @@ return [
     'Products' => [
         'object' => 'Product2',
         'fields' => [
-            'Qualifications Code' => 'ProductCode',
-            'Qualifications Name' => 'Name',
+            'Product Code' => 'ProductCode',
+            'Product Name' => 'Name',
             'Qualification Level' => 'Qualification_Level__c',
             'Qualifications Active' => 'Qualifications_Active__c',
             'Training Package' => 'Training_Package__c',
@@ -24,7 +24,7 @@ return [
             'Provider Code' => 'Provider_Code__c',
             'Description' => 'Description',
             'Modified Time' => 'LastModifiedDate',
-            'Qualifications Id' => 'Qualifications_Id__c',
+            'Id' => 'Qualifications_Id__c',
             'SalesforceId' => 'Id'
         ],
         'childObjects' => [
@@ -34,10 +34,13 @@ return [
                     'Cost Price' => 'Cost_Price__c',
                     'Unit Price' => 'UnitPrice',
                     'Online Price' => 'Online_Price__c',
-                    'Qualifications Id' => 'Zoho_Qualifications_Id__c'
+                    'Id' => 'Zoho_Qualifications_Id__c'
                 ],
                 'relations' => [
                     "parentId" => 'Product2Id'
+                ],
+                'default' => [
+                    '01s280000089sP6' => 'PriceBook2ID'
                 ]
             ]
         ],
@@ -51,6 +54,11 @@ return [
                     'RTO Name' => 'Zoho_RTO_Id__c'
                 ]
             ]
+        ],
+        'default' => [
+        ],
+        'relations' => [
+            'Id' => 'Qualifications_Id__c',
         ]
     ],
     'Portfolio' => [
@@ -369,79 +377,27 @@ return [
     'Vendors' => [
         'object' => 'Account',
         'fields' => [
-            'ACN / ABN' => '',
-            'Administration Person Direct Phone' => 'Administration_Person_Direct_Phone__c',
-            'Administration Person First Name' => 'Administration_Person_First_Name__c',
-            'Administration Person Surname' => 'Administration_Person_Surname__c',
-            'B2B Contact' => 'B2B_Contact__c',
-            'Business Position' => 'Business_Position__c',
-            'Business Position Title' => 'Business_Position_Title__c',
-            'Business Type' => 'Business_Type__c',
-            'City' => '',
-            'Company / Organisation' => '',
-            'Company Id' => 'Company_Id__c',
-            'Company Name Abbreviation' => 'Company_Name_Abbreviation__c',
-            'Company Name in Full' => 'Company_Name_in_Full__c',
-            'Company Owner Id' => '',
-            'Company Type' => '',
-            'Country' => 'Country__c',
-            'Employees' => '',
-            'Fax' => 'Fax',
-            'First Name' => '',
-            'Industry' => 'Industry',
-            'Last Activity Time' => '',
-            'Lead Source' => '',
-            'Mailing Postcode' => '',
-            'Mailing State' => '',
-            'Message' => 'Message__c',
-            'Mobile' => '',
-            'Number / Unit' => 'Number_Unit__c',
-            'Parent Company' => '',
-            'Partnership Status' => 'Partnership_Status__c',
+            'Vendor Name' => 'Name',
+            'Provider Code' => 'Provider_Code__c',
             'Phone' => 'Phone',
-            'PO Box or Street' => '',
-            'Postcode / ZIP' => '',
-            'Province' => 'Province__c',
-            'RTO Provider Code' => 'Provider_Code__c',
-            'Specific Source' => '',
-            'Street/Road/etc' => '',
-            'Suburb/City' => 'Suburb_City__c',
-            'Suburb/City/Town' => '',
-            'Surname' => '',
-            'Title' => '',
-            'Trading Name' => '',
             'Website' => 'Website',
-            'Work Email' => '',
-            'Work Phone' => 'Work_Phone__c',
+            'Email' => 'Email__c',
+            'CURRENT' => 'CURRENT__c',
+            'Description' => 'Description',
+            'Id' => 'Zoho_RTO_Id__c',
             'SalesforceId' => 'Id'
         ],
         'childObjects' => [
-            [
-                'object' => 'PricebookEntry',
-                'fields' => [
-                    'Cost Price' => 'Cost_Price__c',
-                    'Unit Price' => 'UnitPrice',
-                    'Online Price' => 'Online_Price__c',
-                    'Qualifications Id' => 'Zoho_Qualifications_Id__c'
-                ],
-                'relations' => [
-                    "parentId" => 'Product2Id'
-                ]
-            ]
+            
         ],
         'parentObjects' => [
-            [
-                'object' => 'Account',
-                'fields' => [
-                    'RTO Name' => 'Id'
-                ],
-                'relations' => [
-                    'RTO Name' => 'Zoho_RTO_Id__c'
-                ]
-            ]
+            
         ],
         'default' => [
-            'Company' => 'RecordType'
+            '012p00000008kWxAAI' => 'RecordTypeId'
+        ],
+        'relations' => [
+            'Id' => 'Zoho_RTO_Id__c',
         ]
     ],
     'Potentials' => [
