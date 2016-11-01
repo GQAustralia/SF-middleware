@@ -89,11 +89,6 @@ class OutboundService implements AWSClientInterface
 //						<FL val='Online Price'>0</FL>
 //						</row></Products>";
         
-        $xml = "<Vendors><row no='1'><FL val='Id'>696292000040395206</FL><FL val='Vendor Name'><![CDATA[RTO Test]]></FL>
-								<FL val='Provider Code'><![CDATA[RTO]]></FL>
-								<FL val='CURRENT'>true</FL>
-								<FL val='Description'><![CDATA[]]></FL>
-							</row></Vendors>";
 //        $attr = array
 //(
 //    'authtoken' => 'ff5196138d9b9112b7fe675a9c6025d0',
@@ -101,13 +96,34 @@ class OutboundService implements AWSClientInterface
 //    'module' => 'Products',
 //    'response_type' => 'json'
 //);
+        
+//$xml = "<Vendors><row no='1'><FL val='Id'>696292000040395206</FL><FL val='Vendor Name'><![CDATA[RTO Test Data]]></FL>
+//                                                <FL val='Provider Code'><![CDATA[RTO]]></FL>
+//                                                <FL val='CURRENT'>true</FL>
+//                                                <FL val='Description'><![CDATA[]]></FL>
+//                                        </row></Vendors>";
+//              $attr = array
+//(
+//    'authtoken' => 'ff5196138d9b9112b7fe675a9c6025d0',
+//    'function' => 'upd',
+//    'module' => 'Vendors',
+//    'response_type' => 'json'
+//);
+              
+$xml = '<Leads>
+	    	<row no="1">
+				<FL val="Id">6962920000309034431</FL>
+				<FL val="Target RTO_ID">696292000010931848</FL>
+                </row>
+		</Leads>';
               $attr = array
 (
     'authtoken' => 'ff5196138d9b9112b7fe675a9c6025d0',
     'function' => 'upd',
-    'module' => 'Vendors',
+    'module' => 'Leads',
     'response_type' => 'json'
-);
+);              
+              
         
         $OutboundSalesforceService = new OutboundSalesforceService;
         $response = $OutboundSalesforceService->sendToSalesforce($xml,$attr);

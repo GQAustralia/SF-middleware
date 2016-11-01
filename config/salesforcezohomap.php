@@ -47,9 +47,6 @@ return [
         'parentObjects' => [
             [
                 'object' => 'Account',
-                'fields' => [
-                    'RTO Name' => 'Id'
-                ],
                 'relations' => [
                     'RTO Name' => 'Zoho_RTO_Id__c'
                 ]
@@ -127,7 +124,6 @@ return [
             'Payment received' => 'Payment_received__c',
             'Payment Reference Number' => 'Payment_Reference_Number__c',
             'Phone' => 'Phone__c',
-            'Portfolio Id' => 'Portfolio_Id__c',
             'Portfolio Name' => 'Name',
             'Portfolio Owner' => 'OwnerId',
             'Portfolio Stage' => 'Portfolio_Stage__c',
@@ -161,6 +157,7 @@ return [
             'Visitor ID' => 'Visitor_ID__c',
             'Welcome Call Completed' => 'Welcome_Call_Completed__c',
             'Years of Experience' => 'Years_of_Experience__c',
+            'Id' => 'Portfolio_Id__c',
             'SalesforceId' => 'Id'
         ],
         'childObjects' => [
@@ -223,110 +220,113 @@ return [
             ]
         ],
         'default' => [
+        ],
+        'relations' => [
+            'Id' => 'Portfolio_Id__c',
         ]
     ],
-    'Leads' => [
-        'object' => 'Lead',
-        'fields' => [
-           'Lead Owner' => 'OwnerId',
-            'Active in the system' => 'Active_in_the_system__c',
-            'Applicant Proceeding' => 'Applicant_Proceeding__c',
-            'Assessor' => 'Assessor__c',
-            'Australian or Overseas Experience' => 'Australian_or_Overseas_Experience__c',
-            'Business Name' => 'Business_Name__c',
-            'Chart Start URL' => 'Chart_Start_URL__c',
-            'Chat Transcript' => 'Chat_Transcript__c',
-            'Client IP' => 'Client_IP__c',
-            'Contact Person' => 'Contact_Person__c',
-            'Contact Phone' => 'Phone',
-            'Cost Price' => 'Cost_Price__c',
-            'Country' => 'Country',
-            'Created Time' => 'Created_Time__c',
-            'Debit Success Account Num' => 'Debit_Success_Account_Num__c',
-            'Deposit Amount' => 'Deposit_Amount__c',
-            'Description' => 'Description',
-            'Duration' => 'Duration__c',
-            'Email' => 'Email',
-            'Employer' => 'Employer__c',
-            'Enquiry Time' => 'Enquiry_Time__c',
-            'Faculty' => 'Faculty__c',
-            'Final Quote $' => '',
-            'First Name' => 'FirstName',
-            'GA Search Keywords' => 'GA_Search_Keywords__c',
-            'Google Click ID' => 'Google_Click_ID__c',
-            'Heard About Us' => 'Heard_About_Us__c',
-            'High Level Skills' => 'High_Level_Skills__c',
-            'Historical Heard About Us' => 'Historical_Heard_About_Us__c',
-            'How Did you Hear About GQ?' => 'How_Did_you_Hear_About_GQ__c',
-            'In-Depth Source' => 'In_Depth_Source__c',
-            'Invoice Number' => 'Invoice_Number__c',
-            'Invoice Paid Date' => 'Invoice_Paid_Date__c',
-            'Invoice Sent' => 'Invoice_Sent__c',
-            'Keyword' => 'Keyword__c',
-            'Last Name' => 'LastName',
-            'Lead Id' => 'Lead_Id__c',
-            'Lead Source' => 'LeadSource',
-            'Lead Status' => '',
-            'Mailing Postcode' => '',
-            'Managing Managers Experience' => 'Managing_Managers_Experience__c',
-            'Message' => 'Message__c',
-            'Mobile' => 'MobilePhone',
-            'Not Proceeding' => 'Not_Proceeding__c',
-            'Occupation' => 'Occupation__c',
-            'Other Qualifications' => 'Other_Qualifications__c',
-            'Other Qualifications Age' => 'Other_Qualifications_Age__c',
-            'Payment Plan Serial' => 'Payment_Plan_Serial__c',
-            'Phone' => 'Phone',
-            'Post Code' => 'PostalCode',
-            'Province' => 'Province__c',
-            'Pushed To CS' => 'Pushed_To_CS__c',
-            'Qualification Demanded' => 'Qualification_Demanded__c',
-            'Qualification Demanded Code' => 'Qualification_Demanded_Code__c',
-            'Qualification Quoted Price' => 'Qualification_Quoted_Price__c',
-            'Quoted Price' => 'Quoted_Price__c',
-            'Read Terms and Cond' => 'Read_Terms_and_Cond__c',
-            'Reason for Contact' => 'Reason_for_Contact__c',
-            'Reason For Qualification' => 'Reason_For_Qualification__c',
-            'Referrer' => 'Referrer__c',
-            'RTO' => 'RTO__c',
-            'Sale Price' => 'Sale_Price__c',
-            'Salutation' => 'Salutation',
-            'Secondary Email' => 'Secondary_Email__c',
-            'Skill Level' => 'Skill_Level__c',
-            'Source Description' => 'Source_Description__c',
-            'Special Notes' => 'Special_Notes__c',
-            'Specific Source' => 'Specific_Source__c',
-            'Strategic Decision Making' => '',
-            'Street' => 'Street',
-            'Suburb' => '',
-            'Target RTO' => 'Target_RTO__c',
-            'The Faculty' => '',
-            'Unit Price' => 'Unit_Price__c',
-            'Using Voucher' => 'Using_Voucher__c',
-            'Visitor ID' => 'Visitor_ID__c',
-            'Work Phone' => 'Work_Phone__c',
-            'SalesforceId' => 'Id'
-        ],
-        'childObjects' => [
-            [
-               
-            ]
-        ],
-        'parentObjects' => [
-            [
-                'object' => 'User',
-                'fields' => [
-                    'Lead Owner' => 'Id'
-                ],
-                'relations' => [
-                    'Lead Owner' => 'OwnerId'
-                ]
-            ]
-           
-        ],
-        'default' => [
-        ]
-    ],
+//    'Leads' => [
+//        'object' => 'Lead',
+//        'fields' => [
+//           'Lead Owner' => 'OwnerId',
+//            'Active in the system' => 'Active_in_the_system__c',
+//            'Applicant Proceeding' => 'Applicant_Proceeding__c',
+//            'Assessor' => 'Assessor__c',
+//            'Australian or Overseas Experience' => 'Australian_or_Overseas_Experience__c',
+//            'Business Name' => 'Business_Name__c',
+//            'Chart Start URL' => 'Chart_Start_URL__c',
+//            'Chat Transcript' => 'Chat_Transcript__c',
+//            'Client IP' => 'Client_IP__c',
+//            'Contact Person' => 'Contact_Person__c',
+//            'Contact Phone' => 'Phone',
+//            'Cost Price' => 'Cost_Price__c',
+//            'Country' => 'Country',
+//            'Created Time' => 'Created_Time__c',
+//            'Debit Success Account Num' => 'Debit_Success_Account_Num__c',
+//            'Deposit Amount' => 'Deposit_Amount__c',
+//            'Description' => 'Description',
+//            'Duration' => 'Duration__c',
+//            'Email' => 'Email',
+//            'Employer' => 'Employer__c',
+//            'Enquiry Time' => 'Enquiry_Time__c',
+//            'Faculty' => 'Faculty__c',
+//            'Final Quote $' => '',
+//            'First Name' => 'FirstName',
+//            'GA Search Keywords' => 'GA_Search_Keywords__c',
+//            'Google Click ID' => 'Google_Click_ID__c',
+//            'Heard About Us' => 'Heard_About_Us__c',
+//            'High Level Skills' => 'High_Level_Skills__c',
+//            'Historical Heard About Us' => 'Historical_Heard_About_Us__c',
+//            'How Did you Hear About GQ?' => 'How_Did_you_Hear_About_GQ__c',
+//            'In-Depth Source' => 'In_Depth_Source__c',
+//            'Invoice Number' => 'Invoice_Number__c',
+//            'Invoice Paid Date' => 'Invoice_Paid_Date__c',
+//            'Invoice Sent' => 'Invoice_Sent__c',
+//            'Keyword' => 'Keyword__c',
+//            'Last Name' => 'LastName',
+//            'Lead Id' => 'Lead_Id__c',
+//            'Lead Source' => 'LeadSource',
+//            'Lead Status' => '',
+//            'Mailing Postcode' => '',
+//            'Managing Managers Experience' => 'Managing_Managers_Experience__c',
+//            'Message' => 'Message__c',
+//            'Mobile' => 'MobilePhone',
+//            'Not Proceeding' => 'Not_Proceeding__c',
+//            'Occupation' => 'Occupation__c',
+//            'Other Qualifications' => 'Other_Qualifications__c',
+//            'Other Qualifications Age' => 'Other_Qualifications_Age__c',
+//            'Payment Plan Serial' => 'Payment_Plan_Serial__c',
+//            'Phone' => 'Phone',
+//            'Post Code' => 'PostalCode',
+//            'Province' => 'Province__c',
+//            'Pushed To CS' => 'Pushed_To_CS__c',
+//            'Qualification Demanded' => 'Qualification_Demanded__c',
+//            'Qualification Demanded Code' => 'Qualification_Demanded_Code__c',
+//            'Qualification Quoted Price' => 'Qualification_Quoted_Price__c',
+//            'Quoted Price' => 'Quoted_Price__c',
+//            'Read Terms and Cond' => 'Read_Terms_and_Cond__c',
+//            'Reason for Contact' => 'Reason_for_Contact__c',
+//            'Reason For Qualification' => 'Reason_For_Qualification__c',
+//            'Referrer' => 'Referrer__c',
+//            'RTO' => 'RTO__c',
+//            'Sale Price' => 'Sale_Price__c',
+//            'Salutation' => 'Salutation',
+//            'Secondary Email' => 'Secondary_Email__c',
+//            'Skill Level' => 'Skill_Level__c',
+//            'Source Description' => 'Source_Description__c',
+//            'Special Notes' => 'Special_Notes__c',
+//            'Specific Source' => 'Specific_Source__c',
+//            'Strategic Decision Making' => '',
+//            'Street' => 'Street',
+//            'Suburb' => '',
+//            'Target RTO' => 'Target_RTO__c',
+//            'The Faculty' => '',
+//            'Unit Price' => 'Unit_Price__c',
+//            'Using Voucher' => 'Using_Voucher__c',
+//            'Visitor ID' => 'Visitor_ID__c',
+//            'Work Phone' => 'Work_Phone__c',
+//            'SalesforceId' => 'Id'
+//        ],
+//        'childObjects' => [
+//            [
+//               
+//            ]
+//        ],
+//        'parentObjects' => [
+//            [
+//                'object' => 'User',
+//                'fields' => [
+//                    'Lead Owner' => 'Id'
+//                ],
+//                'relations' => [
+//                    'Lead Owner' => 'OwnerId'
+//                ]
+//            ]
+//           
+//        ],
+//        'default' => [
+//        ]
+//    ],
     'Tasks' => [
         'object' => 'Task',
         'fields' => [
@@ -401,37 +401,51 @@ return [
         ]
     ],
     'Potentials' => [
-        'object' => 'Opportunity',
+        'object' => 'Enrollment__c',
         'fields' => [
-
+            'Id' => 'Portfolio_Id__c',
+            'Target RTO_ID' => 'Target_RTO__c',
             'SalesforceId' => 'Id'
         ],
         'childObjects' => [
-            [
-                'object' => 'PricebookEntry',
-                'fields' => [
-                    'Cost Price' => 'Cost_Price__c',
-                    'Unit Price' => 'UnitPrice',
-                    'Online Price' => 'Online_Price__c',
-                    'Qualifications Id' => 'Zoho_Qualifications_Id__c'
-                ],
-                'relations' => [
-                    "parentId" => 'Product2Id'
-                ]
-            ]
+            
         ],
         'parentObjects' => [
             [
                 'object' => 'Account',
-                'fields' => [
-                    'RTO Name' => 'Id'
-                ],
                 'relations' => [
-                    'RTO Name' => 'Zoho_RTO_Id__c'
+                    'Target RTO_ID' => 'Zoho_RTO_Id__c'
                 ]
             ]
         ],
         'default' => [
+        ],
+        'relations' => [
+            'Id' => 'Portfolio_Id__c',
+        ]
+    ],
+    'Leads' => [
+        'object' => 'Contact',
+        'fields' => [
+            'Id' => 'Zoho_Client_Id__c',
+            'Target RTO_ID' => 'Employer__c',
+            'SalesforceId' => 'Id'
+        ],
+        'childObjects' => [
+            
+        ],
+        'parentObjects' => [
+            [
+                'object' => 'Account',
+                'relations' => [
+                    'Target RTO_ID' => 'Zoho_RTO_Id__c'
+                ]
+            ]
+        ],
+        'default' => [
+        ],
+        'relations' => [
+            'Id' => 'Zoho_Client_Id__c',
         ]
     ],
     
