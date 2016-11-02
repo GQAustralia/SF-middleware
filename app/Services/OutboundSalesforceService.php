@@ -51,13 +51,13 @@ class OutboundSalesforceService {
             echo $module;
             if ($module && isset($jsonArray[$module]) && isset($jsonArray[$module]["row"]) && isset($jsonArray[$module]["row"]["FL"])) {
                 $dataArray = $jsonArray[$module]["row"]["FL"];
-                var_dump($dataArray);
+                //var_dump($dataArray);
                 foreach ($dataArray as $data) {
                     $val = $data["-val"];
                     $text = isset($data["#text"]) ? $data["#text"] : '';
                     $objectArray[$val] = $text;
                 }
-                var_dump($objectArray);
+               // var_dump($objectArray);
             }
             return $objectArray;
         } catch (\Exception $ex) {
@@ -66,7 +66,7 @@ class OutboundSalesforceService {
     }
 
     private function mapData($module, $data, $function = 'fetch') {
-        //var_dump($data);
+ //       var_dump($data);
         $map = config("salesforcezohomap.$module");
         if (!empty($map)) {
             $objectName = $map['object'];
@@ -133,7 +133,6 @@ class OutboundSalesforceService {
                     return $this->processUpdate($objectName, $salesForceObject);
                 break;
             case 'upd' :
-                var_dump($salesForceObject);
                 return $this->processUpdate($objectName, $salesForceObject);
                 break;
         }
@@ -142,9 +141,6 @@ class OutboundSalesforceService {
     private function processInsert($objectName, $salesForceObject) {
         $createResponse = Salesforce::create(array($salesForceObject), $objectName);
         $returnResponse = $createResponse[0];
-        echo '<pre>';
-        var_dump($returnResponse);
-        echo '</pre>';
         if ($returnResponse->success)
             return $returnResponse->id;
 
@@ -208,8 +204,6 @@ class OutboundSalesforceService {
                     $childObject->$key = $val;
                 }
             }
-            echo $childObjectName;
-            var_dump($childObject);
             $childId = $this->processObject($childObjectName, $childObject, $cond, $function);
             if (isset($child['childObjects'])) {
                 $this->processChild($child['childObjects'], $childId, $data, $function);

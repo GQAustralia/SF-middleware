@@ -110,53 +110,49 @@ class OutboundService implements AWSClientInterface
 //    'response_type' => 'json'
 //);
               
-$xml = '<Leads>
-	    	<row no="1">
-				<FL val="Id">6962920000309034431</FL>
-				<FL val="Target RTO_ID">696292000010931848</FL>
-                </row>
-		</Leads>';
-              $attr = array
-(
-    'authtoken' => 'ff5196138d9b9112b7fe675a9c6025d0',
-    'function' => 'upd',
-    'module' => 'Leads',
-    'response_type' => 'json'
-);              
+//$xml = '<Leads>
+//	    	<row no="1">
+//				<FL val="Id">6962920000309034431</FL>
+//				<FL val="Target RTO_ID">696292000010931848</FL>
+//                </row>
+//		</Leads>';
+//              $attr = array
+//(
+//    'authtoken' => 'ff5196138d9b9112b7fe675a9c6025d0',
+//    'function' => 'upd',
+//    'module' => 'Leads',
+//    'response_type' => 'json'
+//);              
               
         
         $OutboundSalesforceService = new OutboundSalesforceService;
-        $response = $OutboundSalesforceService->sendToSalesforce($xml,$attr);
+//        $response = $OutboundSalesforceService->sendToSalesforce($xml,$attr);
         
-//        $messages = $this->getQueueMessages();
-//        if($messages !== false){
-//            foreach($messages as $message){
-//                $xml = $message['Body'];
-//                $attributes = array();
-//                if(!empty($message['MessageAttributes'])) {
-//                    foreach($message['MessageAttributes'] as $key => $attr){
-//                        $attributes[$key] = $attr['StringValue'];
-//                    }
-//                }
-//                echo $xml;
-//                print_r($attributes);
-//                exit();
-//               $response = $OutboundSalesforceService->sendToSalesforce($xml,$attributes);
-//               $response = false;
-//               if($response){
-//                   $mid = $message['MessageId'];
-//                   $reciptHandles = $message['ReceiptHandle'];
-//                   $result = $client->deleteMessage(array(
-//                        // QueueUrl is required
-//                        'QueueUrl' => $this->queueURI,
-//                        // ReceiptHandle is required
-//                        'ReceiptHandle' => $reciptHandles,
-//                    ));
-//               }
-//               
-//            }
-//            $this->sendMessagesToSalesforce();
-//        }
+        $messages = $this->getQueueMessages();
+        if($messages !== false){
+            foreach($messages as $message){
+                $xml = $message['Body'];
+                $attributes = array();
+                if(!empty($message['MessageAttributes'])) {
+                    foreach($message['MessageAttributes'] as $key => $attr){
+                        $attributes[$key] = $attr['StringValue'];
+                    }
+                }
+               $response = $OutboundSalesforceService->sendToSalesforce($xml,$attributes);
+               if($response){
+                   $mid = $message['MessageId'];
+                   $reciptHandles = $message['ReceiptHandle'];
+                   $result = $client->deleteMessage(array(
+                        // QueueUrl is required
+                        'QueueUrl' => $this->queueURI,
+                        // ReceiptHandle is required
+                        'ReceiptHandle' => $reciptHandles,
+                    ));
+               }
+               
+            }
+            $this->sendMessagesToSalesforce();
+        }
         
     }
 }

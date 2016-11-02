@@ -50,7 +50,7 @@ class OutboundSync extends Command
   public function fire()
   {
      $outboundService = new OutboundService();
-     $outboundService->sendMessagesToZOHO();
+     $outboundService->sendMessagesToSalesforce();
     $this->info('Run Succesfully');
   }
 
