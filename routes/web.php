@@ -31,3 +31,4 @@ $app->group(['prefix' => 'example-response', 'namespace' => 'App\Http\Controller
         'uses' => 'ExampleResponseController@form_params'
     ]);
 });
+$app->get('outbound/testZoho', 'SqsOutboundController@testZoho');

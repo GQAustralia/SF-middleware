@@ -4,21 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "8eb1536122bb4bf5eff5edfbe013176f",
-    "content-hash": "a7dedb868049d518e8516996ab9ab634",
+    "hash": "48c0e377e8cc18b379236c5cb3d0ca1c",
+    "content-hash": "61365c80ed56f9220eeefc4e047e4c98",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.19.20",
+            "version": "3.19.22",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "36a05623d5f7f4a001cd3396ce0f000262c75062"
+                "reference": "04d2a027cac94674b52dfb4d68667bfe225b0fb5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/36a05623d5f7f4a001cd3396ce0f000262c75062",
-                "reference": "36a05623d5f7f4a001cd3396ce0f000262c75062",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/04d2a027cac94674b52dfb4d68667bfe225b0fb5",
+                "reference": "04d2a027cac94674b52dfb4d68667bfe225b0fb5",
                 "shasum": ""
             },
             "require": {
@@ -85,7 +85,7 @@
                 "s3",
                 "sdk"
             ],
-            "time": "2016-10-25 19:23:39"
+            "time": "2016-11-02 22:24:48"
         },
         {
             "name": "aws/aws-sdk-php-laravel",
@@ -142,6 +142,99 @@
                 "sdk"
             ],
             "time": "2016-01-18 06:57:07"
+        },
+        {
+            "name": "davispeixoto/force-dot-com-toolkit-for-php",
+            "version": "1.0.9",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/davispeixoto/Force.com-Toolkit-for-PHP.git",
+                "reference": "bdec77f21328a73896d25562b54a278fe609e6af"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/davispeixoto/Force.com-Toolkit-for-PHP/zipball/bdec77f21328a73896d25562b54a278fe609e6af",
+                "reference": "bdec77f21328a73896d25562b54a278fe609e6af",
+                "shasum": ""
+            },
+            "require": {
+                "ext-soap": "*",
+                "lib-libxml": "*",
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Davispeixoto\\ForceDotComToolkitForPhp\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Davis Peixoto",
+                    "email": "davis.peixoto@gmail.com"
+                }
+            ],
+            "description": "A wrapper for the Force.com Web Services SOAP API",
+            "keywords": [
+                "crm",
+                "force.com toolkit",
+                "salesforce"
+            ],
+            "time": "2015-05-05 13:40:51"
+        },
+        {
+            "name": "davispeixoto/laravel5-salesforce",
+            "version": "2.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/davispeixoto/Laravel-5-Salesforce.git",
+                "reference": "aaebc245861d195e11076c3224ac764475c5d520"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/davispeixoto/Laravel-5-Salesforce/zipball/aaebc245861d195e11076c3224ac764475c5d520",
+                "reference": "aaebc245861d195e11076c3224ac764475c5d520",
+                "shasum": ""
+            },
+            "require": {
+                "davispeixoto/force-dot-com-toolkit-for-php": "1.0.*",
+                "illuminate/support": "~5.0",
+                "php": ">=5.4.0",
+                "vlucas/phpdotenv": "~2.2"
+            },
+            "require-dev": {
+                "laravel/framework": "~5.0",
+                "phpunit/phpunit": "~4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Davispeixoto\\Laravel5Salesforce\\": "src/Davispeixoto/Laravel5Salesforce"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Davis Peixoto",
+                    "email": "davis.peixoto@gmail.com"
+                }
+            ],
+            "description": "Laravel 5 Salesforce Force.com PHP Toolkit port",
+            "keywords": [
+                "crm",
+                "force.com toolkit",
+                "laravel",
+                "laravel 5",
+                "salesforce"
+            ],
+            "time": "2016-10-06 15:25:01"
         },
         {
             "name": "doctrine/inflector",
@@ -1529,6 +1622,206 @@
             "time": "2016-09-07 18:38:25"
         },
         {
+            "name": "laravelista/lumen-vendor-publish",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravelista/lumen-vendor-publish.git",
+                "reference": "51af71ad84007ae94fdf80b4aaf78fd981a62289"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravelista/lumen-vendor-publish/zipball/51af71ad84007ae94fdf80b4aaf78fd981a62289",
+                "reference": "51af71ad84007ae94fdf80b4aaf78fd981a62289",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^5.0",
+                "illuminate/filesystem": "^5.0",
+                "illuminate/support": "^5.0",
+                "league/flysystem": "^1.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Laravelista\\LumenVendorPublish\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mario Bašić",
+                    "email": "mario.basic@outlook.com"
+                }
+            ],
+            "description": "vendor:publish for Lumen framework.",
+            "keywords": [
+                "command",
+                "console",
+                "lumen",
+                "publish",
+                "vendor"
+            ],
+            "time": "2016-09-25 10:55:42"
+        },
+        {
+            "name": "league/flysystem",
+            "version": "1.0.32",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/thephpleague/flysystem.git",
+                "reference": "1b5c4a0031697f46e779a9d1b309c2e1b24daeab"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/1b5c4a0031697f46e779a9d1b309c2e1b24daeab",
+                "reference": "1b5c4a0031697f46e779a9d1b309c2e1b24daeab",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.5.9"
+            },
+            "conflict": {
+                "league/flysystem-sftp": "<1.0.6"
+            },
+            "require-dev": {
+                "ext-fileinfo": "*",
+                "mockery/mockery": "~0.9",
+                "phpspec/phpspec": "^2.2",
+                "phpunit/phpunit": "~4.8"
+            },
+            "suggest": {
+                "ext-fileinfo": "Required for MimeType",
+                "league/flysystem-aws-s3-v2": "Allows you to use S3 storage with AWS SDK v2",
+                "league/flysystem-aws-s3-v3": "Allows you to use S3 storage with AWS SDK v3",
+                "league/flysystem-azure": "Allows you to use Windows Azure Blob storage",
+                "league/flysystem-cached-adapter": "Flysystem adapter decorator for metadata caching",
+                "league/flysystem-copy": "Allows you to use Copy.com storage",
+                "league/flysystem-dropbox": "Allows you to use Dropbox storage",
+                "league/flysystem-eventable-filesystem": "Allows you to use EventableFilesystem",
+                "league/flysystem-rackspace": "Allows you to use Rackspace Cloud Files",
+                "league/flysystem-sftp": "Allows you to use SFTP server storage via phpseclib",
+                "league/flysystem-webdav": "Allows you to use WebDAV storage",
+                "league/flysystem-ziparchive": "Allows you to use ZipArchive adapter"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.1-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "League\\Flysystem\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Frank de Jonge",
+                    "email": "info@frenky.net"
+                }
+            ],
+            "description": "Filesystem abstraction: Many filesystems, one API.",
+            "keywords": [
+                "Cloud Files",
+                "WebDAV",
+                "abstraction",
+                "aws",
+                "cloud",
+                "copy.com",
+                "dropbox",
+                "file systems",
+                "files",
+                "filesystem",
+                "filesystems",
+                "ftp",
+                "rackspace",
+                "remote",
+                "s3",
+                "sftp",
+                "storage"
+            ],
+            "time": "2016-10-19 20:38:46"
+        },
+        {
+            "name": "markwilson/xml-to-json",
+            "version": "0.1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/markwilson/xml-to-json.git",
+                "reference": "5c3b18b5142cfc5332b521ce7f16bafad8545437"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/markwilson/xml-to-json/zipball/5c3b18b5142cfc5332b521ce7f16bafad8545437",
+                "reference": "5c3b18b5142cfc5332b521ce7f16bafad8545437",
+                "shasum": ""
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "MarkWilson": "./src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mark Wilson",
+                    "email": "mark@89allport.co.uk"
+                }
+            ],
+            "time": "2015-04-08 07:52:43"
+        },
+        {
+            "name": "michaelb/lumen-make",
+            "version": "v1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/michaelbonds/lumen-make.git",
+                "reference": "291b0b1feae92db814a528f9ef49ae54dcf418df"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/michaelbonds/lumen-make/zipball/291b0b1feae92db814a528f9ef49ae54dcf418df",
+                "reference": "291b0b1feae92db814a528f9ef49ae54dcf418df",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/lumen-framework": "~5.1"
+            },
+            "type": "lumen",
+            "autoload": {
+                "psr-4": {
+                    "MichaelB\\LumenMake\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Michael Bonds",
+                    "email": "mbonds1219@gmail.com"
+                }
+            ],
+            "description": "Lumen make adds more make commands to lumen for jobs, controllers, middleware, etc.",
+            "time": "2016-01-20 22:46:21"
+        },
+        {
             "name": "monolog/monolog",
             "version": "1.21.0",
             "source": {
@@ -2059,16 +2352,16 @@
         },
         {
             "name": "symfony/event-dispatcher",
-            "version": "v3.1.5",
+            "version": "v3.1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/event-dispatcher.git",
-                "reference": "c0c00c80b3a69132c4e55c3e7db32b4a387615e5"
+                "reference": "28b0832b2553ffb80cabef6a7a812ff1e670c0bc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/event-dispatcher/zipball/c0c00c80b3a69132c4e55c3e7db32b4a387615e5",
-                "reference": "c0c00c80b3a69132c4e55c3e7db32b4a387615e5",
+                "url": "https://api.github.com/repos/symfony/event-dispatcher/zipball/28b0832b2553ffb80cabef6a7a812ff1e670c0bc",
+                "reference": "28b0832b2553ffb80cabef6a7a812ff1e670c0bc",
                 "shasum": ""
             },
             "require": {
@@ -2115,7 +2408,7 @@
             ],
             "description": "Symfony EventDispatcher Component",
             "homepage": "https://symfony.com",
-            "time": "2016-07-19 10:45:57"
+            "time": "2016-10-13 06:28:43"
         },
         {
             "name": "symfony/finder",
@@ -3798,16 +4091,16 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v3.1.5",
+            "version": "v3.1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "368b9738d4033c8b93454cb0dbd45d305135a6d3"
+                "reference": "7ff51b06c6c3d5cc6686df69004a42c69df09e27"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/368b9738d4033c8b93454cb0dbd45d305135a6d3",
-                "reference": "368b9738d4033c8b93454cb0dbd45d305135a6d3",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/7ff51b06c6c3d5cc6686df69004a42c69df09e27",
+                "reference": "7ff51b06c6c3d5cc6686df69004a42c69df09e27",
                 "shasum": ""
             },
             "require": {
@@ -3843,7 +4136,7 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "https://symfony.com",
-            "time": "2016-09-25 08:27:07"
+            "time": "2016-10-24 18:41:13"
         },
         {
             "name": "webmozart/assert",
