@@ -46,8 +46,13 @@ class OutboundSalesforceService {
         if(!empty($mappedData["ZOHOID"])){
             foreach ($mappedData["ZOHOID"] as $rel => $val)
             $Id = $this->getObjectId($objectName, $rel, $val);
-            if($Id !== false) $mappedData['fields']["Id"] = $Id;
-            else unset($mappedData['fields']["Id"]);
+            if($Id !== false){
+                $mappedData['fields']["Id"] = $Id;
+            } 
+            else{
+                $mappedData['fields'][$rel] = $val;
+                unset($mappedData['fields']["Id"]);
+            } 
         }
         if (!empty($mappedData['fields'])) {
             foreach ($mappedData['fields'] as $key => $value) {
@@ -61,14 +66,31 @@ class OutboundSalesforceService {
         $objectId = (isset($mappedData['fields']["Id"])) ? $mappedData['fields']["Id"] : false;
         if (isset($mappedData['parentRelation']) && $objId){
             $mappedData['fields'][$mappedData['parentRelation']] = $objId;
-            if($operation == 'update') unset($mappedData['fields'][$mappedData['parentRelation']]);
+//            if($operation == 'update') unset($mappedData['fields'][$mappedData['parentRelation']]);
             $Id = $this->getObjectId($objectName, $mappedData['parentRelation'], $objId);
-            if($Id !== false) $mappedData['fields']["Id"] = $Id;
+            if($Id !== false){
+                 $mappedData['fields']["Id"] = $Id;
+                 unset($mappedData['fields'][$mappedData['parentRelation']]);
+            }
         }
             
         switch ($operation) {
             case 'update':
                 $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
+                break;
+            case 'updateornew':
+                if(empty($mappedData['fields']['Id']) || $mappedData['fields']['Id']==false){
+                    unset($mappedData['fields']['Id']);
+                    if(!empty($mappedData["newfields"])){
+                        foreach($mappedData["newfields"] as $key => $val)
+                            $mappedData['fields'][$key] = $val;
+                    }
+                    $objectId = $this->processInsert($objectName, (object) $mappedData['fields']);
+                }else{
+                    $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
+                }
+                //var_dump($objectId);
+                //var_dump($mappedData['fields']);
                 break;
         }
 

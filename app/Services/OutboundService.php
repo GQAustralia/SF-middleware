@@ -88,6 +88,7 @@ class OutboundService implements AWSClientInterface
                 }
                $response = $OutboundSalesforceService->sendToSalesforce($body,$attributes);
                var_dump($response);
+//               $response = false;
                if($response){
                    $mid = $message['MessageId'];
                    $reciptHandles = $message['ReceiptHandle'];
