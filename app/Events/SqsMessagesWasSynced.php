@@ -2,8 +2,6 @@
 
 namespace App\Events;
 
-use App\Message;
-
 class SqsMessagesWasSynced extends Event
 {
     public $messageIdList = [];

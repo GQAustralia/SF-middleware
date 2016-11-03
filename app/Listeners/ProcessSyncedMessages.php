@@ -7,14 +7,15 @@ use App\Http\Controllers\StatusCodes;
 use App\Message;
 use App\Repositories\Contracts\MessageLogRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
-use App\Resolvers\ProvidesUnSerializationOfSalesForceMessages;
+use App\Resolvers\MessageStatusResolver;
+use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 use App\Subscriber;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ProcessSyncedMessages implements ShouldQueue, StatusCodes
 {
-    use ProvidesUnSerializationOfSalesForceMessages;
+    use ProvidesDecodingOfSalesForceMessages;
 
     const SENT = 'sent';
     const FAILED = 'failed';
@@ -36,20 +37,28 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     protected $messageLog;
 
     /**
+     * @var MessageStatusResolver
+     */
+    protected $messageStatusResolver;
+
+    /**
      * SqsMessagesWasSyncedEventListener constructor.
      * @param MessageRepositoryInterface $message
      * @param GuzzleClient $guzzleClient
      * @param MessageLogRepositoryInterface $messageLog
+     * @param MessageStatusResolver $messageStatusResolver
      */
     public function __construct(
         MessageRepositoryInterface $message,
         GuzzleClient $guzzleClient,
-        MessageLogRepositoryInterface $messageLog
+        MessageLogRepositoryInterface $messageLog,
+        MessageStatusResolver $messageStatusResolver
     )
     {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
         $this->messageLog = $messageLog;
+        $this->messageStatusResolver = $messageStatusResolver;
     }
 
     /**
@@ -57,13 +66,18 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      */
     public function handle(SqsMessagesWasSynced $event)
     {
-        $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['queue']);
+        $messagesForResolve = [];
 
-        collect($messages)->each(function ($message) {
+        $messages = $this->message->findAllWhereIn('message_id', $event->messageIdList, ['action']);
+
+        collect($messages)->each(function ($message) use (&$messagesForResolve) {
             if ($this->hasSubscribers($message)) {
                 $this->handleMessageSubscribers($message);
+                $messagesForResolve[] = $message->message_id;
             }
         });
+
+        $this->messageStatusResolver->resolve($messagesForResolve);
     }
 
     /**
@@ -72,7 +86,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      */
     private function hasSubscribers(Message $message)
     {
-        return $message->queue->subscriber->count();
+        return $message->action->subscriber->count();
     }
 
     /**
@@ -82,7 +96,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     {
         $subscriberMessageLogs = collect([]);
 
-        collect($message->queue->subscriber)->each(function ($subscriber) use ($subscriberMessageLogs, $message) {
+        collect($message->action->subscriber)->each(function ($subscriber) use ($subscriberMessageLogs, $message) {
 
             $isValidUrl = $this->guardIsValidUrl($subscriber->url);
 
@@ -130,18 +144,21 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      */
     private function sendMessageToSubscriber($url, $message)
     {
-        $formParams = $this->buildPostParams($this->unSerializeSalesForceMessage($message));
+        $formParams = array_merge(
+            ['http_errors' => false],
+            ['form_params' => $this->deCodeSalesForceMessage($this->cleanMessageContentForSending($message))]
+        );
 
         return $this->guzzleClient->post($url, $formParams);
     }
 
     /**
      * @param string $message
-     * @return array
+     * @return string
      */
-    private function buildPostParams($message)
+    private function cleanMessageContentForSending($message)
     {
-        return array_merge(['http_errors' => false], ['form_params' => $message]);
+        return str_replace('\'', '"', $message);
     }
 
     /**

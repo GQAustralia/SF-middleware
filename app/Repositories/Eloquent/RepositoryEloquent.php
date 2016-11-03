@@ -27,7 +27,8 @@ abstract class RepositoryEloquent implements RepositoryInterface
     public function __construct(App $app)
     {
         $this->app = $app;
-        $this->model = ($this->app->make($this->model()))->newQuery();
+        $model = $this->app->make($this->model());
+        $this->model = $model->newQuery();
     }
 
     /**

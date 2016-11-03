@@ -1,6 +1,6 @@
 <?php
 
-use App\Queue;
+use App\Action;
 use App\Repositories\Eloquent\SubscriberRepositoryEloquent;
 use App\Subscriber;
 use Illuminate\Database\Eloquent\Collection;
@@ -100,25 +100,25 @@ class SubscriberRepositoryEloquentTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_returns_subscriber_with_collection_of_que_pivot_when_que_is_attached()
+    public function it_returns_subscriber_with_collection_of_action_pivot_when_action_is_attached()
     {
         $subscriber = factory(Subscriber::class)->create();
-        $queue = factory(Queue::class)->create();
+        $action = factory(Action::class)->create();
 
-        $result = $this->repository->attachQueue($subscriber->id, $queue->id);
+        $result = $this->repository->attachAction($subscriber->id, $action->id);
 
-        $this->seeInDatabase('queue_subscriber', ['queue_id' => $queue->id, 'subscriber_id' => $subscriber->id]);
+        $this->seeInDatabase('action_subscriber', ['action_id' => $action->id, 'subscriber_id' => $subscriber->id]);
         $this->assertInstanceOf(Subscriber::class, $result);
-        $this->assertInstanceOf(Collection::class, $result->queue);
-        $this->assertInstanceOf(Queue::class, $result->queue[0]);
+        $this->assertInstanceOf(Collection::class, $result->action);
+        $this->assertInstanceOf(Action::class, $result->action[0]);
     }
 
     /** @test */
-    public function it_returns_null_on_que_attachment_when_subscriber_does_not_exist()
+    public function it_returns_null_on_action_attachment_when_subscriber_does_not_exist()
     {
-        $queue = factory(Queue::class)->create();
+        $action = factory(Action::class)->create();
 
-        $result = $this->repository->attachQueue('unknownId', $queue->id);
+        $result = $this->repository->attachAction('unknownId', $action->id);
 
         $this->assertNull($result);
     }

@@ -31,10 +31,10 @@ class SubscriberRepositoryEloquent extends RepositoryEloquent implements Subscri
 
     /**
      * @param int $subscriberId
-     * @param int $queueId
+     * @param int $actionId
      * @return Subscriber
      */
-    public function attachQueue($subscriberId, $queueId)
+    public function attachAction($subscriberId, $actionId)
     {
         $subscriber = $this->subscriber->find($subscriberId);
 
@@ -42,7 +42,7 @@ class SubscriberRepositoryEloquent extends RepositoryEloquent implements Subscri
             return null;
         }
 
-        $subscriber->queue()->attach($queueId);
+        $subscriber->action()->attach($actionId);
 
         return $subscriber;
     }

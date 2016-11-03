@@ -11,8 +11,8 @@
 |
 */
 
-$app->post('sync', [
-    'as' => 'sync',
+$app->post('sync/{queue}', [
+    'as' => 'sync/{queue}',
     'uses' => 'MessageQueueController@sync'
 ]);
 

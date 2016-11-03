@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-class CreateQueueTable extends Migration
+class CreateActionSubscriberTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,10 @@ class CreateQueueTable extends Migration
      */
     public function up()
     {
-        Schema::create('queue', function (Blueprint $table) {
+        Schema::create('action_subscriber', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('queue_name');
-            $table->string('aws_queue_name');
-            $table->string('arn');
+            $table->integer('action_id');
+            $table->integer('subscriber_id');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -30,6 +29,6 @@ class CreateQueueTable extends Migration
      */
     public function down()
     {
-        Schema::drop('queue');
+        Schema::drop('action_subscriber');
     }
 }

@@ -13,16 +13,17 @@ class Message extends Model
      *
      * @var array
      */
-    protected $fillable = ['message_id', 'queue_id', 'message_content', 'completed'];
+    protected $fillable = ['message_id', 'action_id', 'message_content', 'completed'];
 
     /**
-     * Get the associated queues to Message.
+     * Get the associated actions to Message.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function queue()
+    public function action()
     {
-        return $this->belongsTo(Queue::class);
+
+        return $this->belongsTo(Action::class);
     }
 
     /**
@@ -32,6 +33,6 @@ class Message extends Model
      */
     public function subscriber()
     {
-        return $this->belongsToMany(Subscriber::class, 'sent_message')->withPivot('id','status')->withTimestamps();
+        return $this->belongsToMany(Subscriber::class, 'sent_message')->withPivot('id', 'status')->withTimestamps();
     }
 }
