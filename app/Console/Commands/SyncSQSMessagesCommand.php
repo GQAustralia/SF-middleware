@@ -12,7 +12,6 @@ use Laravel\Lumen\Routing\ProvidesConvenienceMethods;
 
 class SyncSQSMessagesCommand extends Command
 {
-
     use ProvidesConvenienceMethods;
 
     const DATABASE_ERROR_MESSAGE = 'Database error please contact your Administrator.';

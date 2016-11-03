@@ -20,6 +20,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     const SENT = 'sent';
     const FAILED = 'failed';
     const HTTP_NOT_FOUND = 'HTTP/1.1 404 Not Found';
+    const AUTH_TOKEN = '5vZmU6HGAsmN8Qfc-YDoDwhH454950';
 
     /**
      * @var MessageRepositoryInterface
@@ -53,8 +54,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
         GuzzleClient $guzzleClient,
         MessageLogRepositoryInterface $messageLog,
         MessageStatusResolver $messageStatusResolver
-    )
-    {
+    ) {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
         $this->messageLog = $messageLog;
@@ -144,9 +144,14 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
      */
     private function sendMessageToSubscriber($url, $message)
     {
+        $salesForceParameters = array_merge(
+            $this->deCodeSalesForceMessage($this->cleanMessageContentForSending($message)),
+            ['authToken' => self::AUTH_TOKEN]
+        );
+
         $formParams = array_merge(
             ['http_errors' => false],
-            ['form_params' => $this->deCodeSalesForceMessage($this->cleanMessageContentForSending($message))]
+            ['form_params' => $salesForceParameters]
         );
 
         return $this->guzzleClient->post($url, $formParams);

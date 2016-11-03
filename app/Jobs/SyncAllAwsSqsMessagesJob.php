@@ -134,7 +134,7 @@ class SyncAllAwsSqsMessagesJob extends Job
     private function getAQueueMessage(SQSClientService $sqs, $url)
     {
         $message = $sqs->client()
-            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => 5])
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => 60])
             ->get('Messages');
 
         return array_first($message);
