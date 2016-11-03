@@ -118,18 +118,6 @@ class MessageQueueControllerTest extends BaseTestCase
     }
 
     /**
-     * @param string $message
-     * @return string
-     */
-    private function extractSQSMessage($message)
-    {
-        $message = explode('<Message>', $message);
-        $message = explode('</Message>', $message[1]);
-
-        return reset($message);
-    }
-
-    /**
      * @param string $url
      * @param int $visibilityTimeout
      * @return mixed

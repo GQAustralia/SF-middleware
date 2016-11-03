@@ -67,4 +67,16 @@ trait AWSTestHelpers
     {
         return Config::get('url.' . env('APP_ENV'));
     }
+
+    /**
+     * @param string $message
+     * @return string
+     */
+    private function extractSQSMessage($message)
+    {
+        $message = explode('<Message>', $message);
+        $message = explode('</Message>', $message[1]);
+
+        return reset($message);
+    }
 }

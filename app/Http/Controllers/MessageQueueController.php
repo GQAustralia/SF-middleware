@@ -9,7 +9,6 @@ use App\Jobs\Exceptions\NoMessagesToSyncException;
 use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
 use App\Jobs\SyncAllAwsSqsMessagesJob;
 use Illuminate\Database\QueryException;
-use Illuminate\Http\Request;
 use Laravel\Lumen\Http\ResponseFactory;
 
 /**
@@ -36,11 +35,18 @@ class MessageQueueController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @param $queue
+     * @param string $queue
+     *
+     * @throws AWSSQSServerException
+     * @throws NoMessagesToSyncException
+     * @throws DatabaseAlreadySyncedException
+     * @throws NoValidMessagesFromQueueException
+     * @throws InsertIgnoreBulkException
+     * @throws QueryException
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function sync(Request $request, $queue)
+    public function sync($queue)
     {
         try {
             $this->dispatch(new SyncAllAwsSqsMessagesJob($queue));
