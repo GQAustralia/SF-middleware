@@ -12,7 +12,11 @@ class DifferMessageInputDataToDatabaseTest extends BaseTestCase
     {
         $message = factory(Message::class)->create(['created_at' => date('Y-m-d')]);
 
-        $filteredMessageIdList = $this->computeDifference([$message->message_id, 'nonDuplicateIdOne', 'nonDuplicateIdTwo']);
+        $filteredMessageIdList = $this->computeDifference([
+            $message->message_id,
+            'nonDuplicateIdOne',
+            'nonDuplicateIdTwo'
+        ]);
 
         $this->assertEquals(2, count($filteredMessageIdList));
         $this->assertEquals([1 => 'nonDuplicateIdOne', 2 => 'nonDuplicateIdTwo'], $filteredMessageIdList);

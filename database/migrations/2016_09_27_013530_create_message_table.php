@@ -16,7 +16,7 @@ class CreateMessageTable extends Migration
         Schema::create('message', function (Blueprint $table) {
             $table->increments('id');
             $table->string('message_id')->unique();
-            $table->integer('queue_id');
+            $table->integer('action_id');
             $table->text('message_content');
             $table->enum('completed', ['Y', 'N'])->default('N');
             $table->timestamp('created_at');

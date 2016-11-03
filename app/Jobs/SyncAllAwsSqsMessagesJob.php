@@ -5,25 +5,22 @@ namespace App\Jobs;
 use App\Events\SqsMessagesWasSynced;
 use App\Jobs\Exceptions\AWSSQSServerException;
 use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
-use App\Jobs\Exceptions\EmptyQueuesException;
 use App\Jobs\Exceptions\InsertIgnoreBulkException;
 use App\Jobs\Exceptions\NoMessagesToSyncException;
+use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
+use App\Repositories\Contracts\ActionRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
-use App\Repositories\Contracts\QueueRepositoryInterface;
-use App\Repositories\Eloquent\MessageRepositoryEloquent;
 use App\Resolvers\DifferMessageInputDataToDatabase;
+use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 use App\Services\SQSClientService;
 use Aws\Sqs\Exception\SqsException;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 
 class SyncAllAwsSqsMessagesJob extends Job
 {
-    use DifferMessageInputDataToDatabase;
-    /**
-     * @var string
-     */
-    private $queueName;
+    const INBOUND_QUEUE = 'CRMInwardQueue';
+
+    use DifferMessageInputDataToDatabase, ProvidesDecodingOfSalesForceMessages;
 
     /**
      * @var int
@@ -31,31 +28,44 @@ class SyncAllAwsSqsMessagesJob extends Job
     private $messageVisibility;
 
     /**
+     * @var string
+     */
+    private $queueName;
+
+    /**
+     * @var array
+     */
+    private $availableActionList = [];
+
+    /**
      * SyncAwsSqsMessagesJob constructor.
      * @param string $queueName
      * @param int $messageVisibility
      */
-    public function __construct($queueName = 'all', $messageVisibility = 2000)
+    public function __construct($queueName = null, $messageVisibility = 2000)
     {
-        $this->queueName = $queueName;
         $this->messageVisibility = $messageVisibility;
+        $this->queueName = (is_null($queueName) ? self::INBOUND_QUEUE : $queueName);
     }
 
     /**
      * @param SQSClientService $sqs
-     * @param QueueRepositoryInterface $queue
+     * @param ActionRepositoryInterface $action
      * @param MessageRepositoryInterface $message
-     * @return mixed
      */
-    public function handle(SQSClientService $sqs, QueueRepositoryInterface $queue, MessageRepositoryInterface $message)
+    public function handle(
+        SQSClientService $sqs,
+        ActionRepositoryInterface $action,
+        MessageRepositoryInterface $message
+    )
     {
-        $databaseQueues = $this->findAllDatabaseQueuesOrFail($queue);
-        $queues = $this->collectQueuesIdAndUrlOrFail($sqs, $databaseQueues);
-        $queueMessages = $this->collectQueuesMessagesOrFail($sqs, $queues);
+        $this->availableActionList = collect($action->all())->pluck('id', 'name')->all();
 
-        $filteredQueueMessages = $this->validateAndRemoveDuplicateMessages($queueMessages);
+        $queueMessages = $this->collectQueueMessagesOrFail($sqs, $this->queueName);
+        $filteredQueueMessages = $this->removeDuplicateAndValidateIfDatabaseSynced($queueMessages);
+        $messagesForInsert = $this->buildMessagesPayloadForInsertOrFail($filteredQueueMessages);
 
-        $this->insertBulkMessagesOrFail($message, $this->buildMessagePayloadForInsert($filteredQueueMessages));
+        $this->insertBulkMessagesOrFail($message, $messagesForInsert);
 
         event(new SqsMessagesWasSynced(
             collect($filteredQueueMessages)->pluck('MessageId')->toArray()
@@ -63,69 +73,15 @@ class SyncAllAwsSqsMessagesJob extends Job
     }
 
     /**
-     * @param MessageRepositoryEloquent $message
-     * @param array $insertPayload
-     * @throws DatabaseAlreadySyncedException
-     * @throws InsertIgnoreBulkException
-     */
-    public function insertBulkMessagesOrFail(MessageRepositoryEloquent $message, $insertPayload)
-    {
-        try {
-            $message->insertIgnoreBulk($insertPayload);
-        } catch (QueryException $exception) {
-            throw new InsertIgnoreBulkException('Insert Ignore Bulk Error: ' . $exception->getMessage());
-        }
-    }
-
-    /**
-     * @param QueueRepositoryInterface $queue
-     * @return mixed
-     * @throws EmptyQueuesException
-     */
-    private function findAllDatabaseQueuesOrFail(QueueRepositoryInterface $queue)
-    {
-        $databaseQueues = $queue->all();
-
-        if ($this->guardEmptyQueue($databaseQueues)) {
-            throw new EmptyQueuesException('Queues does not exist.');
-        }
-
-        return $databaseQueues;
-    }
-
-    /**
      * @param SQSClientService $sqs
-     * @param array $queueList
+     * @param string $queueName
      * @return array
-     * @throws AWSSQSServerException
-     */
-    private function collectQueuesIdAndUrlOrFail(SQSClientService $sqs, $queueList)
-    {
-        try {
-            return collect($queueList)
-                ->map(function ($que) use ($sqs) {
-                    return [
-                        'id' => $que->id,
-                        'url' => $sqs->client()->getQueueUrl(['QueueName' => $que->aws_queue_name])->get('QueueUrl')
-                    ];
-                })->toArray();
-        } catch (SqsException $exception) {
-            throw new AWSSQSServerException($this->extractSQSMessage($exception->getMessage()));
-        }
-    }
-
-    /**
-     * @param SQSClientService $sqs
-     * @param array $queues
-     * @return array|mixed
      * @throws NoMessagesToSyncException
      */
-    private function collectQueuesMessagesOrFail(SQSClientService $sqs, $queues)
+    private function collectQueueMessagesOrFail(SQSClientService $sqs, $queueName)
     {
-        $collectedMessages = collect($queues)
-            ->map(function ($queue) use ($sqs) {
-                return $this->getAvailableQueueMessageAndAttachId($sqs, $queue['id'], $queue['url']);
-            })->flatten(1);
+        $queueUrl = $this->getQueueUrlOrFail($sqs, $queueName);
+        $collectedMessages = $this->getAvailableQueueMessages($sqs, $queueUrl);
 
         $messages = collect($collectedMessages)->unique('MessageId')->toArray();
 
@@ -138,43 +94,36 @@ class SyncAllAwsSqsMessagesJob extends Job
 
     /**
      * @param SQSClientService $sqs
-     * @param string $queueId
+     * @param string $queueName
+     * @return mixed|null
+     * @throws AWSSQSServerException
+     */
+    private function getQueueUrlOrFail(SQSClientService $sqs, $queueName)
+    {
+        try {
+            return $sqs->client()->getQueueUrl(['QueueName' => $queueName])->get('QueueUrl');
+        } catch (SqsException $exception) {
+            throw new AWSSQSServerException($this->extractSQSMessage($exception->getMessage()));
+        }
+    }
+
+    /**
+     * @param SQSClientService $sqs
      * @param string $queueUrl
      * @return array
      */
-    private function getAvailableQueueMessageAndAttachId(SQSClientService $sqs, $queueId, $queueUrl)
+    private function getAvailableQueueMessages(SQSClientService $sqs, $queueUrl)
     {
         $messages = [];
 
         while ($availableMessage = $this->getAQueueMessage($sqs, $queueUrl)) {
             $messages[] = [
                 'MessageId' => $availableMessage['MessageId'],
-                'Body' => $availableMessage['Body'],
-                'ReceiptHandle' => $availableMessage['ReceiptHandle'],
-                'queue_id' => $queueId,
-                'queue_url' => $queueUrl
+                'Body' => $availableMessage['Body']
             ];
         }
 
         return $messages;
-    }
-
-    /**
-     * @param array $queueMessages
-     * @return array
-     * @throws DatabaseAlreadySyncedException
-     */
-    private function validateAndRemoveDuplicateMessages(array $queueMessages)
-    {
-        $filteredMessages = $this->computeDifference(collect($queueMessages)->pluck('MessageId')->toArray());
-
-        $result = collect($queueMessages)->whereIn('MessageId', $filteredMessages)->toArray();
-
-        if (empty($result)) {
-            throw new DatabaseAlreadySyncedException('Database already synced.');
-        }
-
-        return $result;
     }
 
     /**
@@ -192,43 +141,118 @@ class SyncAllAwsSqsMessagesJob extends Job
     }
 
     /**
-     * @param array $message
+     * @param array $queueMessages
      * @return array
+     * @throws DatabaseAlreadySyncedException
      */
-    private function buildMessagePayloadForInsert($message)
+    private function removeDuplicateAndValidateIfDatabaseSynced(array $queueMessages)
     {
-        return collect($message)
-            ->map(function ($message) {
+        $filteredMessages = $this->computeDifference(collect($queueMessages)->pluck('MessageId')->toArray());
+
+        $result = collect($queueMessages)->whereIn('MessageId', $filteredMessages)->toArray();
+
+        if (empty($result)) {
+            throw new DatabaseAlreadySyncedException('Database already synced.');
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array $messages
+     * @return array
+     * @throws NoValidMessagesFromQueueException
+     */
+    private function buildMessagesPayloadForInsertOrFail($messages)
+    {
+        $dateNow = date('Y-m-d');
+
+        $result = collect($messages)
+            ->map(function ($message) use ($dateNow){
 
                 $messageContent = $this->validateMessageContent($message['Body']);
 
                 if ($messageContent) {
                     return [
                         'message_id' => $message['MessageId'],
-                        'queue_id' => $message['queue_id'],
-                        'message_content' => $messageContent,
-                        'completed' => 'N'
+                        'action_id' => $this->getActionIdFromMessageContent($message['Body']),
+                        'message_content' => $this->cleanMessageContentForInsert($message['Body']),
+                        'completed' => 'N',
+                        'create_at' => $dateNow,
+                        'updated_at' => $dateNow
                     ];
                 }
             })->reject(function ($message) {
                 return empty($message);
             })->toArray();
+
+        if (empty($result)) {
+            throw new NoValidMessagesFromQueueException('No valid messages from queue to sync.');
+        }
+
+        return $result;
     }
 
     /**
-     * @param $messageContent
+     * @param string $messageContent
      * @return mixed
+     */
+    private function getActionIdFromMessageContent($messageContent)
+    {
+        $messageContent = $this->deCodeSalesForceMessage($messageContent);
+
+        return $this->availableActionList[$messageContent['op']];
+    }
+
+    /**
+     * @param string $message
+     * @return string
+     */
+    private function cleanMessageContentForInsert($message)
+    {
+        return str_replace('"', '\'', $message);
+    }
+
+    /**
+     * @param string $messageContent
+     * @return bool|string
      */
     private function validateMessageContent($messageContent)
     {
-        $messageContent = str_replace('"', '\'', $messageContent);
-        $result = @unserialize(str_replace('\'', '"', $messageContent));
+        $decodedMessage = json_decode($messageContent, true);
 
-        if (!$result) {
+        if (!$decodedMessage) {
             return false;
         }
 
-        return $messageContent;
+        if (!array_key_exists('op', $decodedMessage)) {
+            return false;
+        }
+
+        if ($decodedMessage['op'] == '') {
+            return false;
+        }
+
+        if (!array_key_exists($decodedMessage['op'], $this->availableActionList)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param MessageRepositoryInterface $message
+     * @param array $insertPayload
+     * @throws DatabaseAlreadySyncedException
+     * @throws InsertIgnoreBulkException
+     */
+    public function insertBulkMessagesOrFail(MessageRepositoryInterface $message, $insertPayload)
+    {
+        try {
+            $message->insertIgnoreBulk($insertPayload);
+        } catch (QueryException $exception) {
+            throw new InsertIgnoreBulkException('Insert Ignore Bulk Error: ' . $exception->getMessage());
+        }
     }
 
     /**
@@ -241,14 +265,5 @@ class SyncAllAwsSqsMessagesJob extends Job
         $message = explode('</Message>', $message[1]);
 
         return reset($message);
-    }
-
-    /**
-     * @param Collection $queueList
-     * @return bool
-     */
-    private function guardEmptyQueue(Collection $queueList)
-    {
-        return $queueList->isEmpty();
     }
 }

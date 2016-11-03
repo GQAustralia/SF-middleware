@@ -16,13 +16,13 @@ class Subscriber extends Model
     protected $fillable = ['platform_name', 'url'];
 
     /**
-     * A Subscriber belongs to many Queue.
+     * A Subscriber belongs to many Action.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function queue()
+    public function action()
     {
-        return $this->belongsToMany(Queue::class)->withTimestamps();
+        return $this->belongsToMany(Action::class)->withTimestamps();
     }
 
     /**

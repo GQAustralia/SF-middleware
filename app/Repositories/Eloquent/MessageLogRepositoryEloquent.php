@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\Action;
 use App\MessageLog;
 use App\Repositories\Contracts\MessageLogRepositoryInterface;
 
@@ -13,8 +14,8 @@ class MessageLogRepositoryEloquent extends RepositoryEloquent implements Message
     private $messageLog;
 
     /**
-     * SentMessageRepositoryEloquent constructor.
-     * @param SentMessage $queue
+     * MessageLogRepositoryEloquent constructor.
+     * @param MessageLog $messageLog
      */
     public function __construct(MessageLog $messageLog)
     {
@@ -22,7 +23,7 @@ class MessageLogRepositoryEloquent extends RepositoryEloquent implements Message
     }
 
     /**
-     * @return Queue
+     * @return Action
      */
     public function model()
     {

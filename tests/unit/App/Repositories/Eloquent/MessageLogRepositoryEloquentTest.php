@@ -5,7 +5,7 @@ use App\Repositories\Eloquent\MessageLogRepositoryEloquent;
 
 class MessageLogRepositoryEloquentTest extends BaseTestCase
 {
- 	protected $repository;
+    protected $repository;
 
     public function setUp()
     {
@@ -13,26 +13,26 @@ class MessageLogRepositoryEloquentTest extends BaseTestCase
 
         $this->repository = $this->app->make(MessageLogRepositoryEloquent::class);
     }
-	
-	/** @test */
-	public function it_returns_true_on_successful_insert()
-	{
-		$dateNow = date('Y-m-d');
 
-		$input = factory(MessageLog::class, 3)->make(['created_at' => $dateNow, 'updated_at' => $dateNow]);
+    /** @test */
+    public function it_returns_true_on_successful_insert()
+    {
+        $dateNow = date('Y-m-d');
 
-		$result = $this->repository->insertBulk($input->toArray());
+        $input = factory(MessageLog::class, 3)->make(['created_at' => $dateNow, 'updated_at' => $dateNow]);
 
-		$this->assertEquals(3, MessageLog::all()->count());
-		$this->assertEquals(1, $result);
-		$this->assertMultipleSeeInDatabase('message_log', $input->toArray());
-	}
+        $result = $this->repository->insertBulk($input->toArray());
 
-	/** @test */
-	public function it_does_not_save_when_payload_is_empty()
-	{
-		$result = $this->repository->insertBulk([]);
+        $this->assertEquals(3, MessageLog::all()->count());
+        $this->assertEquals(1, $result);
+        $this->assertMultipleSeeInDatabase('message_log', $input->toArray());
+    }
 
-		$this->assertNull($result);
-	}
+    /** @test */
+    public function it_does_not_save_when_payload_is_empty()
+    {
+        $result = $this->repository->insertBulk([]);
+
+        $this->assertNull($result);
+    }
 }
