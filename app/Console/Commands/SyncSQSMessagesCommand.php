@@ -22,7 +22,7 @@ class SyncSQSMessagesCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'sync:sqs {queue=CRMInwardQueue}';
+    protected $signature = 'inbound:sync {queue=CRMInwardQueue}';
 
     /**
      * The console command description.
