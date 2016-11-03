@@ -17,11 +17,7 @@
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
-<<<<<<< HEAD
         "phpunit/phpunit": "~4.0",
-=======
-        "phpunit/phpunit": "4.*",
->>>>>>> develop
         "mockery/mockery": "~0.9"
     },
     "autoload": {
