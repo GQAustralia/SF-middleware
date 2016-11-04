@@ -1,11 +1,9 @@
 <?php
-
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 namespace App\Services;
 
 use Salesforce;
@@ -16,21 +14,31 @@ use MarkWilson\XmlToJson;
  *
  * @author samir.mohapatra
  */
-class OutboundSalesforceService {
+class OutboundSalesforceService
+{
 
-    public function __construct() {
+    /**
+     * OutboundSalesforceService constructor.
+     */
+    public function __construct()
+    {
         
     }
 
-    public function sendToSalesforce($message, $attributes = array()) {
+    /**
+     * 
+     * @param Mixed $message
+     * @param Array $attributes
+     * @return Mixed Salesforce Id or false;
+     */
+    public function sendToSalesforce($message, $attributes = array())
+    {
         $module = isset($attributes["module"]) ? $attributes["module"] : false;
         $operation = isset($attributes["operation"]) ? $attributes["operation"] : false;
         if ($module !== false) {
             $function = isset($attributes["function"]) ? $attributes["function"] : 'fetch';
-            if (($module == 'Products' || $module == 'Vendors') && ($function == 'upd'))
-                $function = 'updnew';
             $processedData = $this->processMessage($module, $message);
-            $mapedObject = $this->mapData($module, $processedData, $function);
+            return $mapedObject = $this->mapData($module, $processedData, $function);
         }
 
         if ($operation !== false) {
@@ -39,20 +47,29 @@ class OutboundSalesforceService {
         }
     }
 
-    private function sendMessageToSalesforce($operation, $message, $objId = false) {
+    /**
+     * 
+     * @param type $operation
+     * @param type $message
+     * @param type $objId
+     * @return type
+     */
+    private function sendMessageToSalesforce($operation, $message, $objId = false)
+    {
         //var_dump($message);
         $mappedData = $message;
         $objectName = $mappedData['object'];
-        if(!empty($mappedData["ZOHOID"])){
+        if (!empty($mappedData["ZOHOID"])) {
             foreach ($mappedData["ZOHOID"] as $rel => $val)
-            $Id = $this->getObjectId($objectName, $rel, $val);
-            if($Id !== false){
+            {
+                $Id = $this->getObjectId($objectName, $rel, $val);
+            }               
+            if ($Id !== false) {
                 $mappedData['fields']["Id"] = $Id;
-            } 
-            else{
+            } else {
                 $mappedData['fields'][$rel] = $val;
                 unset($mappedData['fields']["Id"]);
-            } 
+            }
         }
         if (!empty($mappedData['fields'])) {
             foreach ($mappedData['fields'] as $key => $value) {
@@ -62,31 +79,31 @@ class OutboundSalesforceService {
                 }
             }
         }
-        
+
         $objectId = (isset($mappedData['fields']["Id"])) ? $mappedData['fields']["Id"] : false;
-        if (isset($mappedData['parentRelation']) && $objId){
+        if (isset($mappedData['parentRelation']) && $objId) {
             $mappedData['fields'][$mappedData['parentRelation']] = $objId;
 //            if($operation == 'update') unset($mappedData['fields'][$mappedData['parentRelation']]);
             $Id = $this->getObjectId($objectName, $mappedData['parentRelation'], $objId);
-            if($Id !== false){
-                 $mappedData['fields']["Id"] = $Id;
-                 unset($mappedData['fields'][$mappedData['parentRelation']]);
+            if ($Id !== false) {
+                $mappedData['fields']["Id"] = $Id;
+                unset($mappedData['fields'][$mappedData['parentRelation']]);
             }
         }
-            
+
         switch ($operation) {
             case 'update':
                 $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
                 break;
             case 'updateornew':
-                if(empty($mappedData['fields']['Id']) || $mappedData['fields']['Id']==false){
+                if (empty($mappedData['fields']['Id']) || $mappedData['fields']['Id'] == false) {
                     unset($mappedData['fields']['Id']);
-                    if(!empty($mappedData["newfields"])){
-                        foreach($mappedData["newfields"] as $key => $val)
+                    if (!empty($mappedData["newfields"])) {
+                        foreach ($mappedData["newfields"] as $key => $val)
                             $mappedData['fields'][$key] = $val;
                     }
                     $objectId = $this->processInsert($objectName, (object) $mappedData['fields']);
-                }else{
+                } else {
                     $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
                 }
                 //var_dump($objectId);
@@ -94,16 +111,23 @@ class OutboundSalesforceService {
                 break;
         }
 
-        if (!empty($message['childs']) && $objectId){
-                foreach($message['childs'] as $child) 
-                    $this->sendMessageToSalesforce($operation, $child, $objectId);
+        if (!empty($message['childs']) && $objectId) {
+            foreach ($message['childs'] as $child){
+                $this->sendMessageToSalesforce($operation, $child, $objectId);
+            }  
         }
-            
+
 
         return $objectId;
     }
 
-    private function getMappedId($value) {
+    /**
+     * 
+     * @param type $value
+     * @return boolean
+     */
+    private function getMappedId($value)
+    {
         $objectName = $value['object'];
         $cond = '';
         if (!empty($value['relations'])) {
@@ -119,7 +143,14 @@ class OutboundSalesforceService {
         return false;
     }
 
-    private function createConditionString($relations = array(), $type = 'AND') {
+    /**
+     * 
+     * @param type $relations
+     * @param type $type
+     * @return type
+     */
+    private function createConditionString($relations = array(), $type = 'AND')
+    {
         $cond = '';
         if (!empty($relations)) {
             foreach ($relations as $relationType => $relation) {
@@ -137,7 +168,14 @@ class OutboundSalesforceService {
         return $cond;
     }
 
-    private function processMessage($module, $message) {
+    /**
+     * 
+     * @param type $module
+     * @param type $message
+     * @return type
+     */
+    private function processMessage($module, $message)
+    {
         $xml = new \SimpleXMLElement($message);
 
         $converter = new XmlToJson\XmlToJsonConverter();
@@ -163,7 +201,15 @@ class OutboundSalesforceService {
         }
     }
 
-    private function mapData($module, $data, $function = 'fetch') {
+    /**
+     * 
+     * @param type $module
+     * @param type $data
+     * @param type $function
+     * @return boolean
+     */
+    private function mapData($module, $data, $function = 'fetch')
+    {
         //       var_dump($data);
         $map = config("salesforcezohomap.$module");
         if (!empty($map)) {
@@ -208,7 +254,16 @@ class OutboundSalesforceService {
         return false;
     }
 
-    private function processObject($objectName, $salesForceObject, $cond = [], $curd = 'fetch') {
+    /**
+     * 
+     * @param type $objectName
+     * @param type $salesForceObject
+     * @param type $cond
+     * @param type $curd
+     * @return type
+     */
+    private function processObject($objectName, $salesForceObject, $cond = [], $curd = 'fetch')
+    {
         //var_dump($salesForceObject);
         if (!isset($salesForceObject->Id)) {
             if (!empty($cond)) {
@@ -236,7 +291,14 @@ class OutboundSalesforceService {
         }
     }
 
-    private function processInsert($objectName, $salesForceObject) {
+    /**
+     * 
+     * @param type $objectName
+     * @param type $salesForceObject
+     * @return boolean
+     */
+    private function processInsert($objectName, $salesForceObject)
+    {
         try {
             $createResponse = Salesforce::create(array($salesForceObject), $objectName);
             $returnResponse = $createResponse[0];
@@ -249,13 +311,20 @@ class OutboundSalesforceService {
         }
     }
 
-    private function processUpdate($objectName, $salesForceObject) {
+    /**
+     * 
+     * @param type $objectName
+     * @param type $salesForceObject
+     * @return boolean
+     */
+    private function processUpdate($objectName, $salesForceObject)
+    {
         try {
             $updateResponse = Salesforce::update(array($salesForceObject), $objectName);
             $returnResponse = $updateResponse[0];
-        echo '<pre>';
-        var_dump($returnResponse);
-        echo '</pre>';
+            echo '<pre>';
+            var_dump($returnResponse);
+            echo '</pre>';
             if ($returnResponse->success)
                 return $returnResponse->id;
 
@@ -265,29 +334,56 @@ class OutboundSalesforceService {
         }
     }
 
-    private function processFetch($objectName, $cond, $select = 'all') {
+    /**
+     * 
+     * @param type $objectName
+     * @param type $cond
+     * @param type $select
+     */
+    private function processFetch($objectName, $cond, $select = 'all')
+    {
         
     }
 
-    private function getObjectId($objectName, $relation, $value) {
+    /**
+     * 
+     * @param type $objectName
+     * @param type $relation
+     * @param type $value
+     * @return boolean
+     */
+    private function getObjectId($objectName, $relation, $value)
+    {
         try {
-        $query = 'SELECT Id from ' . $objectName . ' WHERE ' . $relation . " = '" . $value . "'";
-        $response = Salesforce::query(($query));
-        if (count($response->records) > 0)
-            foreach ($response->records as $record) {
-                return $record->Id;
-            }
-        return false;
+            $query = 'SELECT Id from ' . $objectName . ' WHERE ' . $relation . " = '" . $value . "'";
+            $response = Salesforce::query(($query));
+            if (count($response->records) > 0)
+                foreach ($response->records as $record) {
+                    return $record->Id;
+                }
+            return false;
         } catch (\Exception $ex) {
             return false;
         }
     }
 
-    private function processDelete() {
+    /**
+     * 
+     */
+    private function processDelete()
+    {
         
     }
 
-    private function processChild($childs, $parentId, $data, $function) {
+    /**
+     * 
+     * @param type $childs
+     * @param type $parentId
+     * @param type $data
+     * @param type $function
+     */
+    private function processChild($childs, $parentId, $data, $function)
+    {
         foreach ($childs as $child) {
             $childObjectName = $child['object'];
             $childObject = new \stdClass();
@@ -318,7 +414,14 @@ class OutboundSalesforceService {
         }
     }
 
-    private function processParentFetch($parent, $data) {
+    /**
+     * 
+     * @param type $parent
+     * @param type $data
+     * @return type
+     */
+    private function processParentFetch($parent, $data)
+    {
 
         $parentObjectName = $parent['object'];
         $parentrelations = $parent['relations'];
@@ -333,5 +436,4 @@ class OutboundSalesforceService {
         }
         return $arr;
     }
-
 }
