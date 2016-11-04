@@ -57,7 +57,7 @@ class MessageQueueControllerTest extends BaseTestCase
     /** @test */
     public function it_gives_an_an_invalid_response_when_queue_does_not_exist()
     {
-        $this->post('sync/nonexistingQue');
+        $this->post('sync/nonExistingQue');
 
         $this->assertEquals('The specified queue does not exist for this wsdl version.', $this->getContent());
         $this->assertResponseStatus(400);

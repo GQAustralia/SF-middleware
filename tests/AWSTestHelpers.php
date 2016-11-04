@@ -63,6 +63,22 @@ trait AWSTestHelpers
     /**
      * @return string
      */
+    public function SAMPLE_SALESFORCE_TO_SQS_MESSAGE_WITHOUT_OP()
+    {
+        return '{"amount":"2177","assessor":"696292000018247009","status":"Open","rto":"31718","token":"fb706b1e933ef01e4fb6","mb":"","qual":"Certificate of blahblah","cost":"350","cid":"696292000014545306","cname":"Kylie Drost"}';
+    }
+
+    /**
+     * @return string
+     */
+    public function SAMPLE_SALESFORCE_TO_SQS_MESSAGE_WITH_INVALID_OP()
+    {
+        return '{"amount":"2177","assessor":"696292000018247009","op":"invalidOp","status":"Open","rto":"31718","token":"fb706b1e933ef01e4fb6","mb":"","qual":"Certificate of blahblah","cost":"350","cid":"696292000014545306","cname":"Kylie Drost"}';
+    }
+
+    /**
+     * @return string
+     */
     private function getHostSite()
     {
         return Config::get('url.' . env('APP_ENV'));

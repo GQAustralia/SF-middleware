@@ -1,22 +1,21 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Services;
 
 use App\Events\SqsMessagesWasSynced;
-use App\Jobs\Exceptions\AWSSQSServerException;
-use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
-use App\Jobs\Exceptions\InsertIgnoreBulkException;
-use App\Jobs\Exceptions\NoMessagesToSyncException;
-use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
+use App\Exceptions\AWSSQSServerException;
+use App\Exceptions\DatabaseAlreadySyncedException;
+use App\Exceptions\InsertIgnoreBulkException;
+use App\Exceptions\NoMessagesToSyncException;
+use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Repositories\Contracts\ActionRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\DifferMessageInputDataToDatabase;
 use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
-use App\Services\SQSClientService;
 use Aws\Sqs\Exception\SqsException;
 use Illuminate\Database\QueryException;
 
-class SyncAllAwsSqsMessagesJob extends Job
+class InboundMessagesSync
 {
     const INBOUND_QUEUE = 'CRMInwardQueue';
 
@@ -25,12 +24,7 @@ class SyncAllAwsSqsMessagesJob extends Job
     /**
      * @var int
      */
-    private $messageVisibility;
-
-    /**
-     * @var string
-     */
-    private $queueName;
+    private $messageVisibility = 60;
 
     /**
      * @var array
@@ -38,34 +32,50 @@ class SyncAllAwsSqsMessagesJob extends Job
     private $availableActionList = [];
 
     /**
-     * SyncAwsSqsMessagesJob constructor.
-     * @param string $queueName
-     * @param int $messageVisibility
+     * @var SQSClientService
      */
-    public function __construct($queueName = null, $messageVisibility = 2000)
-    {
-        $this->messageVisibility = $messageVisibility;
-        $this->queueName = (is_null($queueName) ? self::INBOUND_QUEUE : $queueName);
-    }
+    private $sqs;
 
     /**
+     * @var ActionRepositoryInterface
+     */
+    private $action;
+
+    /**
+     * @var MessageRepositoryInterface
+     */
+    private $message;
+
+    /**
+     * InboundMessagesSync constructor.
      * @param SQSClientService $sqs
      * @param ActionRepositoryInterface $action
      * @param MessageRepositoryInterface $message
      */
-    public function handle(
+    public function __construct(
         SQSClientService $sqs,
         ActionRepositoryInterface $action,
         MessageRepositoryInterface $message
-    )
-    {
-        $this->availableActionList = collect($action->all())->pluck('id', 'name')->all();
+    ) {
+        $this->sqs = $sqs;
+        $this->action = $action;
+        $this->message = $message;
+    }
 
-        $queueMessages = $this->collectQueueMessagesOrFail($sqs, $this->queueName);
+    /**
+     * @param string $queueName
+     */
+    public function handle($queueName)
+    {
+        $queueName = (!($queueName) ? self::INBOUND_QUEUE : $queueName);
+
+        $this->availableActionList = collect($this->action->all())->pluck('id', 'name')->all();
+
+        $queueMessages = $this->collectQueueMessagesOrFail($queueName);
         $filteredQueueMessages = $this->removeDuplicateAndValidateIfDatabaseSynced($queueMessages);
         $messagesForInsert = $this->buildMessagesPayloadForInsertOrFail($filteredQueueMessages);
 
-        $this->insertBulkMessagesOrFail($message, $messagesForInsert);
+        $this->insertBulkMessagesOrFail($messagesForInsert);
 
         event(new SqsMessagesWasSynced(
             collect($filteredQueueMessages)->pluck('MessageId')->toArray()
@@ -73,15 +83,25 @@ class SyncAllAwsSqsMessagesJob extends Job
     }
 
     /**
-     * @param SQSClientService $sqs
+     * @param int $total
+     * @return $this
+     */
+    public function messageVisibility($total = 60)
+    {
+        $this->messageVisibility = $total;
+
+        return $this;
+    }
+
+    /**
      * @param string $queueName
      * @return array
      * @throws NoMessagesToSyncException
      */
-    private function collectQueueMessagesOrFail(SQSClientService $sqs, $queueName)
+    private function collectQueueMessagesOrFail($queueName)
     {
-        $queueUrl = $this->getQueueUrlOrFail($sqs, $queueName);
-        $collectedMessages = $this->getAvailableQueueMessages($sqs, $queueUrl);
+        $queueUrl = $this->getQueueUrlOrFail($queueName);
+        $collectedMessages = $this->getAvailableQueueMessages($queueUrl);
 
         $messages = collect($collectedMessages)->unique('MessageId')->toArray();
 
@@ -93,30 +113,28 @@ class SyncAllAwsSqsMessagesJob extends Job
     }
 
     /**
-     * @param SQSClientService $sqs
      * @param string $queueName
-     * @return mixed|null
+     * @return string
      * @throws AWSSQSServerException
      */
-    private function getQueueUrlOrFail(SQSClientService $sqs, $queueName)
+    private function getQueueUrlOrFail($queueName)
     {
         try {
-            return $sqs->client()->getQueueUrl(['QueueName' => $queueName])->get('QueueUrl');
+            return $this->sqs->client()->getQueueUrl(['QueueName' => $queueName])->get('QueueUrl');
         } catch (SqsException $exception) {
             throw new AWSSQSServerException($this->extractSQSMessage($exception->getMessage()));
         }
     }
 
     /**
-     * @param SQSClientService $sqs
      * @param string $queueUrl
      * @return array
      */
-    private function getAvailableQueueMessages(SQSClientService $sqs, $queueUrl)
+    private function getAvailableQueueMessages($queueUrl)
     {
         $messages = [];
 
-        while ($availableMessage = $this->getAQueueMessage($sqs, $queueUrl)) {
+        while ($availableMessage = $this->getAQueueMessage($queueUrl)) {
             $messages[] = [
                 'MessageId' => $availableMessage['MessageId'],
                 'Body' => $availableMessage['Body']
@@ -127,14 +145,13 @@ class SyncAllAwsSqsMessagesJob extends Job
     }
 
     /**
-     * @param SQSClientService $sqs
      * @param string $url
      * @return array
      */
-    private function getAQueueMessage(SQSClientService $sqs, $url)
+    private function getAQueueMessage($url)
     {
-        $message = $sqs->client()
-            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => 60])
+        $message = $this->sqs->client()
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $this->messageVisibility])
             ->get('Messages');
 
         return array_first($message);
@@ -168,7 +185,7 @@ class SyncAllAwsSqsMessagesJob extends Job
         $dateNow = date('Y-m-d');
 
         $result = collect($messages)
-            ->map(function ($message) use ($dateNow){
+            ->map(function ($message) use ($dateNow) {
 
                 $messageContent = $this->validateMessageContent($message['Body']);
 
@@ -241,15 +258,14 @@ class SyncAllAwsSqsMessagesJob extends Job
     }
 
     /**
-     * @param MessageRepositoryInterface $message
      * @param array $insertPayload
      * @throws DatabaseAlreadySyncedException
      * @throws InsertIgnoreBulkException
      */
-    public function insertBulkMessagesOrFail(MessageRepositoryInterface $message, $insertPayload)
+    public function insertBulkMessagesOrFail($insertPayload)
     {
         try {
-            $message->insertIgnoreBulk($insertPayload);
+            $this->message->insertIgnoreBulk($insertPayload);
         } catch (QueryException $exception) {
             throw new InsertIgnoreBulkException('Insert Ignore Bulk Error: ' . $exception->getMessage());
         }

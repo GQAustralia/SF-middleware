@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs\Exceptions;
+namespace App\Exceptions;
 
 class AWSSQSServerException extends \Exception
 {

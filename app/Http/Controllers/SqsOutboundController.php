@@ -7,7 +7,7 @@ use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
 use App\Jobs\Exceptions\EmptyQueuesException;
 use App\Jobs\Exceptions\InsertIgnoreBulkException;
 use App\Jobs\Exceptions\NoMessagesToSyncException;
-use App\Jobs\SyncAllAwsSqsMessagesJob;
+use App\Jobs\InboundMessagesSync;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Laravel\Lumen\Http\ResponseFactory;
@@ -42,7 +42,7 @@ class SqsOutboundController extends Controller {
      */
     public function sync(Request $request) {
         try {
-            $this->dispatch(new SyncAllAwsSqsMessagesJob());
+            $this->dispatch(new InboundMessagesSync());
         } catch (EmptyQueuesException $exc) {
             return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
         } catch (AWSSQSServerException $exc) {
