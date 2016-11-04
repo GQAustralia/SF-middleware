@@ -2,21 +2,68 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\Exceptions\AWSSQSServerException;
+use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
+use App\Jobs\Exceptions\InsertIgnoreBulkException;
+use App\Jobs\Exceptions\NoMessagesToSyncException;
+use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
+use App\Jobs\SyncAllAwsSqsMessagesJob;
+use Illuminate\Database\QueryException;
+use Laravel\Lumen\Http\ResponseFactory;
+
+/**
+ * Class MessageQueueController
+ * @package App\Http\Controllers
+ */
 class MessageQueueController extends Controller
 {
+    const DATABASE_ERROR_MESSAGE = 'Database error please contact your Administrator.';
+    const SYNC_SUCCESS = 'Sync Successful.';
+
     /**
-     * Create a new controller instance.
-     *
-     * @return void
+     * @var ResponseFactory
      */
-    public function __construct()
+    protected $responseFactory;
+
+    /**
+     * MessageQueueController constructor.
+     * @param ResponseFactory $responseFactory
+     */
+    public function __construct(ResponseFactory $responseFactory)
     {
-        //
+        $this->responseFactory = $responseFactory;
     }
 
-    public function create()
+    /**
+     * @param string $queue
+     *
+     * @throws AWSSQSServerException
+     * @throws NoMessagesToSyncException
+     * @throws DatabaseAlreadySyncedException
+     * @throws NoValidMessagesFromQueueException
+     * @throws InsertIgnoreBulkException
+     * @throws QueryException
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function sync($queue)
     {
-        return 'jem';
-    }
+        try {
+            $this->dispatch(new SyncAllAwsSqsMessagesJob($queue));
+        } catch (AWSSQSServerException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
+        } catch (NoMessagesToSyncException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::SUCCESS_STATUS_CODE);
+        } catch (DatabaseAlreadySyncedException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::SUCCESS_STATUS_CODE);
+        } catch (NoValidMessagesFromQueueException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
+        } catch (InsertIgnoreBulkException $exc) {
+            return $this->responseFactory->make($exc->getMessage(), self::INTERNAL_SERVER_ERROR_STATUS_CODE);
+        } catch (QueryException $exc) {
+            return $this->responseFactory->make(self::DATABASE_ERROR_MESSAGE, self::INTERNAL_SERVER_ERROR_STATUS_CODE);
+        }
 
+        return $this->responseFactory->make(self::SYNC_SUCCESS, self::SUCCESS_STATUS_CODE);
+    }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Events;
 
+/**
+ * @codeCoverageIgnore
+ */
 class ExampleEvent extends Event
 {
     /**
@@ -11,6 +14,5 @@ class ExampleEvent extends Event
      */
     public function __construct()
     {
-        //
     }
 }

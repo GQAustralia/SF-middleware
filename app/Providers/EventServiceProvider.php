@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use Laravel\Lumen\Providers\EventServiceProvider as ServiceProvider;
 
+/**
+ * @codeCoverageIgnore
+ */
 class EventServiceProvider extends ServiceProvider
 {
     /**
@@ -12,8 +15,8 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        'App\Events\SomeEvent' => [
-            'App\Listeners\EventListener',
+        'App\Events\SqsMessagesWasSynced' => [
+            'App\Listeners\ProcessSyncedMessages'
         ],
     ];
 }
