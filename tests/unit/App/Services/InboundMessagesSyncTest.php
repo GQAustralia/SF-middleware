@@ -32,7 +32,7 @@ class InboundMessagesSyncTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_stores_aws_queues_messages_to_messages_table()
+        public function it_stores_aws_queues_messages_to_messages_table_and_deletes_the_messages_to_aws_queue()
     {
         $this->SET_UP_SQS();
 
@@ -59,6 +59,11 @@ class InboundMessagesSyncTest extends BaseTestCase
 
         sleep(10);
 
+        $deletedQueResults = $this->sqs->client()->getQueueAttributes([
+            'QueueUrl' => $queueUrl,
+            'AttributeNames' => ['ApproximateNumberOfMessages']
+        ]);
+
         $this->assertEquals($actionAttributes['Attributes']['ApproximateNumberOfMessages'], Message::all()->count());
         $this->seeInDatabase('message', [
             'message_id' => $message['MessageId'],
@@ -66,6 +71,8 @@ class InboundMessagesSyncTest extends BaseTestCase
             'message_content' => str_replace('"', '\'', $message['Body']),
             'completed' => 'N'
         ]);
+
+        $this->assertEquals($deletedQueResults['Attributes']['ApproximateNumberOfMessages'], 0);
     }
 
     /**

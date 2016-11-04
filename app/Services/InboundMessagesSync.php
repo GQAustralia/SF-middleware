@@ -8,6 +8,7 @@ use App\Exceptions\DatabaseAlreadySyncedException;
 use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
+use App\Exceptions\QueuesMessageDeleteException;
 use App\Repositories\Contracts\ActionRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Resolvers\DifferMessageInputDataToDatabase;
@@ -60,6 +61,7 @@ class InboundMessagesSync
         $this->sqs = $sqs;
         $this->action = $action;
         $this->message = $message;
+
     }
 
     /**
@@ -67,15 +69,17 @@ class InboundMessagesSync
      */
     public function handle($queueName)
     {
-        $queueName = (!($queueName) ? self::INBOUND_QUEUE : $queueName);
-
         $this->availableActionList = collect($this->action->all())->pluck('id', 'name')->all();
 
-        $queueMessages = $this->collectQueueMessagesOrFail($queueName);
+        $queueName = (!($queueName) ? self::INBOUND_QUEUE : $queueName);
+
+        $queueUrl = $this->getQueueUrlOrFail($queueName);
+        $queueMessages = $this->collectQueueMessagesOrFail($queueUrl);
         $filteredQueueMessages = $this->removeDuplicateAndValidateIfDatabaseSynced($queueMessages);
         $messagesForInsert = $this->buildMessagesPayloadForInsertOrFail($filteredQueueMessages);
 
         $this->insertBulkMessagesOrFail($messagesForInsert);
+        $this->deleteAwsQueueMessages($queueUrl, $filteredQueueMessages);
 
         event(new SqsMessagesWasSynced(
             collect($filteredQueueMessages)->pluck('MessageId')->toArray()
@@ -94,13 +98,12 @@ class InboundMessagesSync
     }
 
     /**
-     * @param string $queueName
+     * @param string $queueUrl
      * @return array
      * @throws NoMessagesToSyncException
      */
-    private function collectQueueMessagesOrFail($queueName)
+    private function collectQueueMessagesOrFail($queueUrl)
     {
-        $queueUrl = $this->getQueueUrlOrFail($queueName);
         $collectedMessages = $this->getAvailableQueueMessages($queueUrl);
 
         $messages = collect($collectedMessages)->unique('MessageId')->toArray();
@@ -137,7 +140,8 @@ class InboundMessagesSync
         while ($availableMessage = $this->getAQueueMessage($queueUrl)) {
             $messages[] = [
                 'MessageId' => $availableMessage['MessageId'],
-                'Body' => $availableMessage['Body']
+                'Body' => $availableMessage['Body'],
+                'ReceiptHandle' => $availableMessage['ReceiptHandle']
             ];
         }
 
@@ -269,6 +273,25 @@ class InboundMessagesSync
         } catch (QueryException $exception) {
             throw new InsertIgnoreBulkException('Insert Ignore Bulk Error: ' . $exception->getMessage());
         }
+    }
+
+
+    /**
+     * @param string $queueUrl
+     * @param array $messages
+     * @throws QueuesMessageDeleteException
+     */
+    private function deleteAwsQueueMessages($queueUrl, $messages)
+    {
+        try {
+            $receiptHandles = collect($messages)->pluck('ReceiptHandle')->toArray();
+            collect($receiptHandles)->each(function ($receiptHandle) use ($queueUrl) {
+                $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle]);
+            });
+        } // @codeCoverageIgnoreStart
+        catch (SqsException $exception) {
+            throw new QueuesMessageDeleteException($this->extractSQSMessage($exception->getMessage()));
+        }// @codeCoverageIgnoreEnd
     }
 
     /**
