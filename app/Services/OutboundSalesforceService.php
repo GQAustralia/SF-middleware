@@ -43,6 +43,8 @@ class OutboundSalesforceService
 
         if ($operation !== false) {
             $mappedData = json_decode($message, true);
+            if ($operation == 'LeadChatUpdate')
+                return $this->sendLeadChatToSalesforce($mappedData);
             return $this->sendMessageToSalesforce($operation, $mappedData);
         }
     }
@@ -302,6 +304,9 @@ class OutboundSalesforceService
         try {
             $createResponse = Salesforce::create(array($salesForceObject), $objectName);
             $returnResponse = $createResponse[0];
+            echo '<pre>';
+            var_dump($returnResponse);
+            echo '</pre>';
             if ($returnResponse->success)
                 return $returnResponse->id;
 
@@ -435,5 +440,53 @@ class OutboundSalesforceService
             }
         }
         return $arr;
+    }
+    
+    /**
+     * 
+     * @param type $message
+     * @return boolean
+     */
+    private function sendLeadChatToSalesforce($message)
+    {
+        $mappedData = $message;
+
+        $objectName = $mappedData['object'];
+        if (!empty($mappedData['fields'])) {
+            if (isset($mappedData['fields']["Email"])) {
+                $lead = $this->isLeadChatExists($mappedData['fields']["Email"]);
+                if ($lead !== false) {
+                    $mappedData['fields']["Chat_Transcript__c"] = $lead["Chat_Transcript__c"] . "\n ========== \n" . $mappedData['fields']["Chat_Transcript__c"];
+                    $mappedData['fields']["Id"] = $lead["Id"];
+                    if ($lead["Status"] != 'Closed') {
+                        $mappedData['fields']['Status'] = 'New Lead';
+                        $mappedData['fields']['Pushed_To_CS__c'] = 'False';
+                    }
+
+                    return $this->processUpdate($objectName, (object) $mappedData['fields']);
+                }
+                return $this->processInsert($objectName, (object) $mappedData['fields']);
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param type $email
+     * @return boolean
+     */
+    private function isLeadChatExists($email)
+    {
+        try {
+            $query = 'SELECT Id, Chat_Transcript__c, Status FROM Lead WHERE Email = ' . "'" . $email . "'";
+            $response = Salesforce::query(($query));
+            if (count($response->records) > 0)
+                foreach ($response->records as $record) {
+                    return ["Id" => $record->Id, "Chat_Transcript__c" => $record->Chat_Transcript__c, "Status" => $record->Status];
+                }
+            return false;
+        } catch (\Exception $ex) {
+            return false;
+        }
     }
 }
