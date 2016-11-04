@@ -403,7 +403,7 @@ return [
     'Potentials' => [
         'object' => 'Enrollment__c',
         'fields' => [
-            'Id' => 'Portfolio_Id__c',
+            'Id' => 'Id',
             'Target RTO_ID' => 'Target_RTO__c',
             'SalesforceId' => 'Id'
         ],
@@ -421,13 +421,13 @@ return [
         'default' => [
         ],
         'relations' => [
-            'Id' => 'Portfolio_Id__c',
+            
         ]
     ],
     'Leads' => [
         'object' => 'Contact',
         'fields' => [
-            'Id' => 'Zoho_Client_Id__c',
+            'Id' => 'Id',
             'Target RTO_ID' => 'Employer__c',
             'SalesforceId' => 'Id'
         ],
@@ -445,7 +445,6 @@ return [
         'default' => [
         ],
         'relations' => [
-            'Id' => 'Zoho_Client_Id__c',
         ]
     ],
     
