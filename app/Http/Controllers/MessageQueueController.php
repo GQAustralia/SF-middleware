@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\Exceptions\AWSSQSServerException;
-use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
-use App\Jobs\Exceptions\InsertIgnoreBulkException;
-use App\Jobs\Exceptions\NoMessagesToSyncException;
-use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
-use App\Jobs\SyncAllAwsSqsMessagesJob;
+use App\Exceptions\AWSSQSServerException;
+use App\Exceptions\DatabaseAlreadySyncedException;
+use App\Exceptions\InsertIgnoreBulkException;
+use App\Exceptions\NoMessagesToSyncException;
+use App\Exceptions\NoValidMessagesFromQueueException;
+use App\Services\InboundMessagesSync;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Http\ResponseFactory;
 
@@ -26,12 +26,19 @@ class MessageQueueController extends Controller
     protected $responseFactory;
 
     /**
+     * @var InboundMessagesSync
+     */
+    private $inbound;
+
+    /**
      * MessageQueueController constructor.
      * @param ResponseFactory $responseFactory
+     * @param InboundMessagesSync $inbound
      */
-    public function __construct(ResponseFactory $responseFactory)
+    public function __construct(ResponseFactory $responseFactory, InboundMessagesSync $inbound)
     {
         $this->responseFactory = $responseFactory;
+        $this->inbound = $inbound;
     }
 
     /**
@@ -49,7 +56,7 @@ class MessageQueueController extends Controller
     public function sync($queue)
     {
         try {
-            $this->dispatch(new SyncAllAwsSqsMessagesJob($queue));
+            $this->inbound->handle($queue);
         } catch (AWSSQSServerException $exc) {
             return $this->responseFactory->make($exc->getMessage(), self::BAD_REQUEST_STATUS_CODE);
         } catch (NoMessagesToSyncException $exc) {

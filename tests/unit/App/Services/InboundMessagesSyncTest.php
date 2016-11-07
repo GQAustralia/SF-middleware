@@ -1,24 +1,23 @@
 <?php
 
 use App\Action;
-use App\Jobs\Exceptions\AWSSQSServerException;
-use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
-use App\Jobs\Exceptions\InsertIgnoreBulkException;
-use App\Jobs\Exceptions\NoMessagesToSyncException;
-use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
-use App\Jobs\SyncAllAwsSqsMessagesJob;
+use App\Exceptions\AWSSQSServerException;
+use App\Exceptions\DatabaseAlreadySyncedException;
+use App\Exceptions\InsertIgnoreBulkException;
+use App\Exceptions\NoMessagesToSyncException;
+use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Message;
+use App\Services\InboundMessagesSync;
 use App\Services\SQSClientService;
 use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
-use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Database\QueryException;
 
-class SyncAwsSqsMessagesJobTest extends BaseTestCase
+class InboundMessagesSyncTest extends BaseTestCase
 {
     use AWSTestHelpers;
 
-    private $dispatcher;
+    private $inbound;
     private $sqs;
     private $message;
 
@@ -27,13 +26,13 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         parent::setUp();
 
         $this->sqs = new SQSClientService();
-        $this->dispatcher = $this->app->make(Dispatcher::class);
+        $this->inbound = $this->app->make(InboundMessagesSync::class);
 
         $this->withoutEvents();
     }
 
     /** @test */
-    public function it_stores_aws_queues_messages_to_messages_table()
+    public function it_stores_aws_queues_messages_to_messages_table_and_deletes_the_messages_to_aws_queue()
     {
         $this->SET_UP_SQS();
 
@@ -56,9 +55,14 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $message = array_first($message);
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
         sleep(10);
+
+        $deletedQueResults = $this->sqs->client()->getQueueAttributes([
+            'QueueUrl' => $queueUrl,
+            'AttributeNames' => ['ApproximateNumberOfMessages']
+        ]);
 
         $this->assertEquals($actionAttributes['Attributes']['ApproximateNumberOfMessages'], Message::all()->count());
         $this->seeInDatabase('message', [
@@ -67,6 +71,8 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             'message_content' => str_replace('"', '\'', $message['Body']),
             'completed' => 'N'
         ]);
+
+        $this->assertEquals($deletedQueResults['Attributes']['ApproximateNumberOfMessages'], 0);
     }
 
     /**
@@ -96,27 +102,15 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $this->assertTrue(true, true);
     }
 
-    /**
-     * @param $message
-     * @return string
-     */
-    private function extractSQSMessage($message)
-    {
-        $message = explode('<Message>', $message);
-        $message = explode('</Message>', $message[1]);
-
-        return reset($message);
-    }
-
     /** @test */
     public function it_throws_an_exception_when_queue_does_not_exist_in_aws()
     {
         $this->setExpectedException(AWSSQSServerException::class);
 
         $this->setConnection('test_mysql_database');
-        $action = factory(Action::class)->create(['name' => 'changed']);
+        factory(Action::class)->create(['name' => 'changed']);
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob('unknownQueue', '30'));
+        $this->inbound->messageVisibility(30)->handle('unknownQueue');
     }
 
     /**
@@ -128,7 +122,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         factory(Action::class)->create(['name' => 'changed']);
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE());
     }
 
     /** @test */
@@ -154,20 +148,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         sleep(30);
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), 30));
-    }
-
-    /**
-     * @param string $url
-     * @return mixed
-     */
-    private function getAQueueMessage($url, $visibilityTimeout = 30)
-    {
-        $message = $this->sqs->client()
-            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
-            ->get('Messages');
-
-        return array_first($message);
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
     }
 
     /** @test */
@@ -177,43 +158,20 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $this->setConnection('test_mysql_database');
 
-        $action = factory(Action::class)->create(['name' => 'invalidName']);
+        factory(Action::class)->create(['name' => 'invalidName']);
 
         $queueUrl = $this->sqs->client()->getQueueUrl([
             'QueueName' => $this->QUEUE_NAME_SAMPLE(),
         ])->get('QueueUrl');
 
-        $messageId = $this->sqs->client()->sendMessage([
+        $this->sqs->client()->sendMessage([
             'QueueUrl' => $queueUrl,
             'MessageBody' => 'invalidSalesForceMessageBody'
         ])->get('MessageId');
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
         sleep(5);
-    }
-
-    /** @test */
-    public function it_does_not_insert_an_invalid_message_content()
-    {
-        $this->setConnection('test_mysql_database');
-
-        $action = factory(Action::class)->create(['name' => 'changed']);
-
-        $queueUrl = $this->sqs->client()->getQueueUrl([
-            'QueueName' => $this->QUEUE_NAME_SAMPLE(),
-        ])->get('QueueUrl');
-
-        $messageId = $this->sqs->client()->sendMessage([
-            'QueueUrl' => $queueUrl,
-            'MessageBody' => 'invalidSalesForceMessageBody'
-        ])->get('MessageId');
-
-        sleep(5);
-
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
-
-        $this->notSeeInDatabase('message', ['message_id' => $messageId]);
     }
 
     /** @test */
@@ -221,7 +179,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        $action = factory(Action::class)->create(['name' => 'changed']);
+        factory(Action::class)->create(['name' => 'changed']);
 
         $queueUrl = $this->sqs->client()->getQueueUrl([
             'QueueName' => $this->QUEUE_NAME_SAMPLE(),
@@ -229,7 +187,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $messageToDisregard = $this->sqs->client()->sendMessage([
             'QueueUrl' => $queueUrl,
-            'MessageBody' => $this->messageWithoutOp()
+            'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE_WITHOUT_OP()
         ])->get('MessageId');
 
         $messageToSave = $this->sqs->client()->sendMessage([
@@ -237,15 +195,10 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ])->get('MessageId');
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
         $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
-    }
-
-    private function messageWithoutOp()
-    {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
     }
 
     /** @test */
@@ -261,7 +214,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $messageToDisregard = $this->sqs->client()->sendMessage([
             'QueueUrl' => $queueUrl,
-            'MessageBody' => $this->messageWithBlankOp()
+            'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE_WITH_BLANK_OP()
         ])->get('MessageId');
 
         $messageToSave = $this->sqs->client()->sendMessage([
@@ -269,15 +222,10 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ])->get('MessageId');
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
         $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
-    }
-
-    private function messageWithBlankOp()
-    {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:0:'';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
     }
 
     /** @test */
@@ -293,7 +241,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $messageToDisregard = $this->sqs->client()->sendMessage([
             'QueueUrl' => $queueUrl,
-            'MessageBody' => $this->messageWithInvalidOp()
+            'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE_WITH_INVALID_OP()
         ])->get('MessageId');
 
         $messageToSave = $this->sqs->client()->sendMessage([
@@ -301,15 +249,10 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
             'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ])->get('MessageId');
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
         $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
-    }
-
-    private function messageWithInvalidOp()
-    {
-        return '{"amount":"2177","assessor":"696292000018247009","op":"invalidOp","status":"Open","rto":"31718","token":"fb706b1e933ef01e4fb6","mb":"","qual":"Certificate of blahblah","cost":"350","cid":"696292000014545306","cname":"Kylie Drost"}';
     }
 
     /**
@@ -322,7 +265,7 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $this->setConnection('test_mysql_database');
         $this->artisan('migrate:rollback');
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
         $this->artisan('migrate');
     }
@@ -340,13 +283,18 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
         $this->sqs->client()->receiveMessage(['QueueUrl' => $queueUrl, 'VisibilityTimeout' => 2])->get('Messages');
 
+        $this->sqs->client()->sendMessage(array(
+            'QueueUrl' => $queueUrl,
+            'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
+        ));
+
         sleep(7);
 
         Schema::table('message', function ($table) {
             $table->dropColumn('message_id');
         });
 
-        $this->dispatcher->dispatch(new SyncAllAwsSqsMessagesJob($this->QUEUE_NAME_SAMPLE(), '30'));
+        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
     }
 
     /**
@@ -370,5 +318,18 @@ class SyncAwsSqsMessagesJobTest extends BaseTestCase
 
         $this->assertInstanceOf(Result::class, $queueUrlResult);
         $this->assertInstanceOf(Result::class, $queueUrlWithNoMessagesResult);
+    }
+
+    /**
+     * @param string $url
+     * @return mixed
+     */
+    private function getAQueueMessage($url, $visibilityTimeout = 30)
+    {
+        $message = $this->sqs->client()
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
+            ->get('Messages');
+
+        return array_first($message);
     }
 }

@@ -6,17 +6,16 @@ use App\Services\SQSClientService;
 use App\Subscriber;
 use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
-use Illuminate\Support\Facades\Schema;
 
-class MessageQueueControllerTest extends BaseTestCase
+class SyncSQSMessagesCommandTest extends BaseTestCase
 {
     use AWSTestHelpers;
-
-    private $sqs;
 
     public function setUp()
     {
         parent::setUp();
+
+        $this->setConnection('test_mysql_database');
 
         $this->sqs = new SQSClientService();
     }
@@ -57,44 +56,48 @@ class MessageQueueControllerTest extends BaseTestCase
     /** @test */
     public function it_gives_an_an_invalid_response_when_queue_does_not_exist()
     {
-        $this->post('sync/nonExistingQue');
+        $this->artisan('inbound:sync', ['queue' => 'nonExistingQueue']);
 
-        $this->assertEquals('The specified queue does not exist for this wsdl version.', $this->getContent());
-        $this->assertResponseStatus(400);
+        $this->assertEquals('The specified queue does not exist for this wsdl version.', $this->getActualOutput());
     }
 
     /** @test */
-    public function it_returns_a_valid_response_when_no_messages_to_sync()
+    public function it_returns_an_valid_message_when_no_message_to_sync()
     {
-        factory(Action::class, 2)->create(['name' => 'changed']);
+        $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()]);
 
-        $this->post('sync/' . $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE());
+        $this->assertEquals('No available Queues Messages for sync.', $this->getActualOutput());
 
-        $this->assertEquals('No available Queues Messages for sync.', $this->getContent());
-        $this->assertResponseOk();
     }
 
     /** @test */
-    public function it_returns_an_invalid_response_on_database_query_errors()
+    public function it_returns_an_invalid_message_on_database_query_errors()
     {
-        $this->setConnection('test_mysql_database');
-
         $this->artisan('migrate:rollback');
 
-        $this->post('sync/' . $this->QUEUE_NAME_SAMPLE());
+        $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_SAMPLE()]);
 
-        $this->assertEquals('Database error please contact your Administrator.', $this->getContent());
-        $this->assertResponseStatus(500);
+        $this->assertEquals('Database error please contact your Administrator.', $this->getActualOutput());
     }
 
     /** @test */
-    public function it_returns_a_valid_response_on_already_synced_database_and_sqs()
+    public function it_returns_an_invalid_message_when_queue_messages_are_all_invalid()
+    {
+        factory(Action::class)->create(['name' => 'changed']);
+
+        $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_WITH_INVALID_MESSAGES_SAMPLE()]);
+
+        sleep(10);
+
+        $this->assertEquals('No valid messages from queue to sync.', $this->getActualOutput());
+    }
+
+    /** @test */
+    public function it_returns_a_valid_message_on_already_synced_database_and_sqs()
     {
         $this->SET_UP_SQS();
 
-        $this->setConnection('test_mysql_database');
-
-        sleep(30);
+        sleep(15);
 
         $action = factory(Action::class)->create(['name' => 'changed']);
         $actionUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
@@ -110,11 +113,11 @@ class MessageQueueControllerTest extends BaseTestCase
 
         sleep(30);
 
-        $this->post('sync/' . $this->QUEUE_NAME_SAMPLE());
+        $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_SAMPLE()]);
 
         sleep(10);
 
-        $this->assertEquals('Database already synced.', $this->getContent());
+        $this->assertEquals('Database already synced.', $this->getActualOutput());
     }
 
     /** @test */
@@ -122,7 +125,6 @@ class MessageQueueControllerTest extends BaseTestCase
     {
         $this->SET_UP_SQS();
 
-        $this->setConnection('test_mysql_database');
 
         factory(Action::class)->create(['name' => 'changed']);
 
@@ -130,34 +132,14 @@ class MessageQueueControllerTest extends BaseTestCase
             $table->dropColumn('message_id');
         });
 
-        $this->post('sync/' . $this->QUEUE_NAME_SAMPLE());
+        $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_SAMPLE()]);
 
-        sleep(10);
-
-        $this->assertEquals('Insert Ignore Bulk Error.', $this->getContent());
-        $this->assertResponseStatus(500);
+        $this->assertEquals('Insert Ignore Bulk Error.', $this->getActualOutput());
     }
 
     /** @test */
-    public function it_returns_an_invalid_response_when_queue_messages_are_all_invalid()
+    public function it_returns_a_valid_message_on_successful_sync()
     {
-        $this->setConnection('test_mysql_database');
-
-        $action = factory(Action::class)->create(['name' => 'changed']);
-
-        $this->post('sync/' . $this->QUEUE_NAME_WITH_INVALID_MESSAGES_SAMPLE());
-
-        sleep(10);
-
-        $this->assertResponseStatus(400);
-        $this->assertEquals('No valid messages from queue to sync.', $this->getContent());
-    }
-
-    /** @test */
-    public function it_returns_a_valid_response_on_successful_sync()
-    {
-        $this->setConnection('test_mysql_database');
-
         $action = factory(Action::class)->create(['name' => 'changed']);
         $message = factory(Message::class)->create([
             'action_id' => $action->id,
@@ -173,11 +155,9 @@ class MessageQueueControllerTest extends BaseTestCase
         $subscriber = factory(Subscriber::class, 3)->create(['url' => url($this->SUCCESS_RESPONSE_SITE())]);
         $action->subscriber()->attach(collect($subscriber)->pluck('id')->toArray());
 
-        $this->post('sync/' . $this->QUEUE_NAME_SAMPLE());
+        $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_SAMPLE()]);
 
-        $this->assertResponseOk();
-        $this->assertEquals('Sync Successful.', $this->getContent());
-        $this->seeInDatabase('message', ['action_id' => $action->id]);
+        $this->assertEquals('Sync Successful.', $this->getActualOutput());
     }
 
     /**
@@ -200,9 +180,6 @@ class MessageQueueControllerTest extends BaseTestCase
         $queueURLWithInvalidMessagesResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueURLWithInvalidMessages]);
 
         sleep(60);
-
-        $this->assertInstanceOf(Result::class, $queueURLResult);
-        $this->assertInstanceOf(Result::class, $queueURLWithNoMessagesResult);
     }
 
     /**
