@@ -32,7 +32,7 @@ class InboundMessagesSyncTest extends BaseTestCase
     }
 
     /** @test */
-        public function it_stores_aws_queues_messages_to_messages_table_and_deletes_the_messages_to_aws_queue()
+    public function it_stores_aws_queues_messages_to_messages_table_and_deletes_the_messages_to_aws_queue()
     {
         $this->SET_UP_SQS();
 
@@ -108,7 +108,7 @@ class InboundMessagesSyncTest extends BaseTestCase
         $this->setExpectedException(AWSSQSServerException::class);
 
         $this->setConnection('test_mysql_database');
-        $action = factory(Action::class)->create(['name' => 'changed']);
+        factory(Action::class)->create(['name' => 'changed']);
 
         $this->inbound->messageVisibility(30)->handle('unknownQueue');
     }
@@ -158,13 +158,13 @@ class InboundMessagesSyncTest extends BaseTestCase
 
         $this->setConnection('test_mysql_database');
 
-        $action = factory(Action::class)->create(['name' => 'invalidName']);
+        factory(Action::class)->create(['name' => 'invalidName']);
 
         $queueUrl = $this->sqs->client()->getQueueUrl([
             'QueueName' => $this->QUEUE_NAME_SAMPLE(),
         ])->get('QueueUrl');
 
-        $messageId = $this->sqs->client()->sendMessage([
+        $this->sqs->client()->sendMessage([
             'QueueUrl' => $queueUrl,
             'MessageBody' => 'invalidSalesForceMessageBody'
         ])->get('MessageId');
@@ -172,29 +172,6 @@ class InboundMessagesSyncTest extends BaseTestCase
         $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
         sleep(5);
-    }
-
-    /** @test */
-    public function it_does_not_insert_an_invalid_message_content()
-    {
-        $this->setConnection('test_mysql_database');
-
-        $action = factory(Action::class)->create(['name' => 'changed']);
-
-        $queueUrl = $this->sqs->client()->getQueueUrl([
-            'QueueName' => $this->QUEUE_NAME_SAMPLE(),
-        ])->get('QueueUrl');
-
-        $messageId = $this->sqs->client()->sendMessage([
-            'QueueUrl' => $queueUrl,
-            'MessageBody' => 'invalidSalesForceMessageBody'
-        ])->get('MessageId');
-
-        sleep(5);
-
-        $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
-
-        $this->notSeeInDatabase('message', ['message_id' => $messageId]);
     }
 
     /** @test */
@@ -202,7 +179,7 @@ class InboundMessagesSyncTest extends BaseTestCase
     {
         $this->setConnection('test_mysql_database');
 
-        $action = factory(Action::class)->create(['name' => 'changed']);
+        factory(Action::class)->create(['name' => 'changed']);
 
         $queueUrl = $this->sqs->client()->getQueueUrl([
             'QueueName' => $this->QUEUE_NAME_SAMPLE(),
@@ -224,19 +201,6 @@ class InboundMessagesSyncTest extends BaseTestCase
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
     }
 
-    /**
-     * @param string $url
-     * @return mixed
-     */
-    private function getAQueueMessage($url, $visibilityTimeout = 30)
-    {
-        $message = $this->sqs->client()
-            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
-            ->get('Messages');
-
-        return array_first($message);
-    }
-
     /** @test */
     public function it_does_not_insert_when_message_op_field_is_empty()
     {
@@ -250,7 +214,7 @@ class InboundMessagesSyncTest extends BaseTestCase
 
         $messageToDisregard = $this->sqs->client()->sendMessage([
             'QueueUrl' => $queueUrl,
-            'MessageBody' => $this->messageWithBlankOp()
+            'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE_WITH_BLANK_OP()
         ])->get('MessageId');
 
         $messageToSave = $this->sqs->client()->sendMessage([
@@ -262,11 +226,6 @@ class InboundMessagesSyncTest extends BaseTestCase
 
         $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
         $this->seeInDatabase('message', ['message_id' => $messageToSave]);
-    }
-
-    private function messageWithBlankOp()
-    {
-        return "a:11:{s:6:'amount';s:0:'';s:8:'assessor';s:18:'696292000018247009';s:2:'op';s:0:'';s:6:'status';s:4:'Open';s:3:'rto';s:5:'31718';s:5:'token';s:20:'fb706b1e933ef01e4fb6';s:2:'mb';s:0:'';s:4:'qual';s:41:'Certificate IV in Training and Assessment';s:4:'cost';s:5:'350.0';s:3:'cid';s:18:'696292000014545306';s:5:'cname';s:11:'Kylie Drost';}";
     }
 
     /** @test */
@@ -324,6 +283,11 @@ class InboundMessagesSyncTest extends BaseTestCase
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
         $this->sqs->client()->receiveMessage(['QueueUrl' => $queueUrl, 'VisibilityTimeout' => 2])->get('Messages');
 
+        $this->sqs->client()->sendMessage(array(
+            'QueueUrl' => $queueUrl,
+            'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
+        ));
+
         sleep(7);
 
         Schema::table('message', function ($table) {
@@ -354,5 +318,18 @@ class InboundMessagesSyncTest extends BaseTestCase
 
         $this->assertInstanceOf(Result::class, $queueUrlResult);
         $this->assertInstanceOf(Result::class, $queueUrlWithNoMessagesResult);
+    }
+
+    /**
+     * @param string $url
+     * @return mixed
+     */
+    private function getAQueueMessage($url, $visibilityTimeout = 30)
+    {
+        $message = $this->sqs->client()
+            ->receiveMessage(['QueueUrl' => $url, 'VisibilityTimeout' => $visibilityTimeout])
+            ->get('Messages');
+
+        return array_first($message);
     }
 }

@@ -190,6 +190,13 @@ class MessageQueueControllerTest extends BaseTestCase
             'action_id' => $action->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
+
+        $validQueueURL = $this->sqs->client()->createQueue(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
+        $this->sqs->client()->sendMessage([
+            'QueueUrl' => $validQueueURL,
+            'MessageBody' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
+        ]);
+
         $subscriber = factory(Subscriber::class, 3)->create(['url' => url($this->SUCCESS_RESPONSE_SITE())]);
         $action->subscriber()->attach(collect($subscriber)->pluck('id')->toArray());
 
