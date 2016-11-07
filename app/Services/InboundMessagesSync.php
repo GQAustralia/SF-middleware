@@ -271,7 +271,7 @@ class InboundMessagesSync
         try {
             $this->message->insertIgnoreBulk($insertPayload);
         } catch (QueryException $exception) {
-            throw new InsertIgnoreBulkException('Insert Ignore Bulk Error: ' . $exception->getMessage());
+            throw new InsertIgnoreBulkException('Insert Ignore Bulk Error.');
         }
     }
 
