@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Services;
 
 use App\Resolvers\ProvidesAWSConnectionParameters;
@@ -8,34 +7,34 @@ use App\Services\OutboundSalesforceService;
 
 class OutboundService implements AWSClientInterface
 {
+
     use ProvidesAWSConnectionParameters;
 
     /**
      * @var SqsClient
      */
     protected $client;
-    
+
     /**
      *
      * @var String
      */
-    protected  $outboundQueue;
-    /**
-     * SQSClientResolver constructor.
-     */
-    
+    protected $outboundQueue;
+
     /**
      *
      * @var String
      */
     protected $queueURI;
-    
+
+    /**
+     * OutboundService constructor.
+     */
     public function __construct()
     {
         $this->client = new SqsClient($this->awsFullCredentials());
-        $this->outboundQueue = env('outboundQueue','CRMOutboundQueue');
+        $this->outboundQueue = env('outboundQueue', 'CRMOutboundQueue');
         $this->getQueueURI();
-        
     }
 
     /**
@@ -45,64 +44,77 @@ class OutboundService implements AWSClientInterface
     {
         return $this->client;
     }
-    
-    private function getQueueURI(){
+
+    /**
+     * Set SQS Queue URL
+     */
+    private function getQueueURI()
+    {
         try {
-             $result = $this->client->getQueueUrl([
+            $result = $this->client->getQueueUrl([
                 'QueueName' => $this->outboundQueue
             ]);
-             $this->queueURI = $result->get('QueueUrl');
+            $this->queueURI = $result->get('QueueUrl');
         } catch (\Exception $ex) {
             echo $ex->getMessage();
         }
     }
-    private function getQueueMessages(){
+
+    /**
+     * 
+     * @return Mixed $message or false
+     */
+    private function getQueueMessages()
+    {
         try {
-             $result = $this->client->receiveMessage([
+            $result = $this->client->receiveMessage([
                 'MaxNumberOfMessages' => 10,
                 'QueueUrl' => $this->queueURI, // REQUIRED
-                 'MessageAttributeNames' => ['All','.*']
+                'MessageAttributeNames' => ['All', '.*']
             ]);
-             $messages = $result->get('Messages');
-             if(count($messages)>0) return $messages;
-             return false;
+            $messages = $result->get('Messages');
+            if (count($messages) > 0)
+                return $messages;
+            return false;
         } catch (\Exception $ex) {
             echo $ex->getMessage();
             return false;
         }
-       
     }
-    public function sendMessagesToSalesforce(){
-           
+
+    /**
+     * Get Queue Message from SQS and send to Salesforce 
+     */
+    public function sendMessagesToSalesforce()
+    {
+
         $OutboundSalesforceService = new OutboundSalesforceService;
-        
+
         $messages = $this->getQueueMessages();
-        if($messages !== false){
-            foreach($messages as $message){
+        if ($messages !== false) {
+            foreach ($messages as $message) {
                 $body = $message['Body'];
                 $attributes = array();
-                if(!empty($message['MessageAttributes'])) {
-                    foreach($message['MessageAttributes'] as $key => $attr){
+                if (!empty($message['MessageAttributes'])) {
+                    foreach ($message['MessageAttributes'] as $key => $attr) {
                         $attributes[$key] = $attr['StringValue'];
                     }
                 }
-               $response = $OutboundSalesforceService->sendToSalesforce($body,$attributes);
-               var_dump($response);
+                $response = $OutboundSalesforceService->sendToSalesforce($body, $attributes);
+                var_dump($response);
 //               $response = false;
-               if($response){
-                   $mid = $message['MessageId'];
-                   $reciptHandles = $message['ReceiptHandle'];
-                   $result = $this->client->deleteMessage(array(
+                if ($response) {
+                    $mid = $message['MessageId'];
+                    $reciptHandles = $message['ReceiptHandle'];
+                    $result = $this->client->deleteMessage(array(
                         // QueueUrl is required
                         'QueueUrl' => $this->queueURI,
                         // ReceiptHandle is required
                         'ReceiptHandle' => $reciptHandles,
                     ));
-               }
-               
+                }
             }
             $this->sendMessagesToSalesforce();
         }
-        
     }
 }
