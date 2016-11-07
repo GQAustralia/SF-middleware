@@ -28,5 +28,6 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('inbound:sync')->everyMinute();
+        $schedule->command('outbound:sync')->everyMinute();
     }
 }
