@@ -3,7 +3,6 @@ namespace App\Services;
 
 use App\Resolvers\ProvidesAWSConnectionParameters;
 use Aws\Sqs\SqsClient;
-use App\Services\OutboundSalesforceService;
 
 class OutboundService implements AWSClientInterface
 {
@@ -61,7 +60,7 @@ class OutboundService implements AWSClientInterface
     }
 
     /**
-     * 
+     *
      * @return Mixed $message or false
      */
     private function getQueueMessages()
@@ -83,11 +82,10 @@ class OutboundService implements AWSClientInterface
     }
 
     /**
-     * Get Queue Message from SQS and send to Salesforce 
+     * Get Queue Message from SQS and send to Salesforce
      */
     public function sendMessagesToSalesforce()
     {
-
         $OutboundSalesforceService = new OutboundSalesforceService;
 
         $messages = $this->getQueueMessages();
@@ -101,8 +99,7 @@ class OutboundService implements AWSClientInterface
                     }
                 }
                 $response = $OutboundSalesforceService->sendToSalesforce($body, $attributes);
-                var_dump($response);
-//               $response = false;
+
                 if ($response) {
                     $mid = $message['MessageId'];
                     $reciptHandles = $message['ReceiptHandle'];

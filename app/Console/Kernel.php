@@ -2,7 +2,7 @@
 
 namespace App\Console;
 
-use App\Console\Commands\SyncSQSMessagesCommand;
+use App\Console\Commands\SyncInboundMessagesCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
 use Laravelista\LumenVendorPublish\VendorPublishCommand;
@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        SyncSQSMessagesCommand::class,
+        SyncInboundMessagesCommand::class,
         VendorPublishCommand::class
     ];
 
@@ -27,6 +27,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        //
+        $schedule->command('inbound:sync')->everyMinute();
+        $schedule->command('outbound:sync')->everyMinute();
     }
 }

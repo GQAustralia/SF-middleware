@@ -2,7 +2,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Console\Commands\OutboundSync;
+use App\Console\Commands\SyncOutboundMessagesCommand;
 
 class CommandServiceProvider extends ServiceProvider
 {
@@ -16,7 +16,7 @@ class CommandServiceProvider extends ServiceProvider
     {
         $this->app->singleton('command.outbound.sync', function()
         {
-            return new OutboundSync;
+            return new SyncOutboundMessagesCommand;
         });
 
         $this->commands(

@@ -1,16 +1,16 @@
 <?php namespace App\Console\Commands;
 
-use App\Jobs\Exceptions\AWSSQSServerException;
-use App\Jobs\Exceptions\DatabaseAlreadySyncedException;
-use App\Jobs\Exceptions\InsertIgnoreBulkException;
-use App\Jobs\Exceptions\NoMessagesToSyncException;
-use App\Jobs\Exceptions\NoValidMessagesFromQueueException;
-use App\Jobs\SyncAllAwsSqsMessagesJob;
+use App\Exceptions\AWSSQSServerException;
+use App\Exceptions\DatabaseAlreadySyncedException;
+use App\Exceptions\InsertIgnoreBulkException;
+use App\Exceptions\NoMessagesToSyncException;
+use App\Exceptions\NoValidMessagesFromQueueException;
+use App\Services\InboundMessagesSync;
 use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Routing\ProvidesConvenienceMethods;
 
-class SyncSQSMessagesCommand extends Command
+class SyncInboundMessagesCommand extends Command
 {
     use ProvidesConvenienceMethods;
 
@@ -29,7 +29,23 @@ class SyncSQSMessagesCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Calls the MessageQueueController with dynamic parameter queue name.';
+    protected $description = 'Sync Inbound AWS Messages';
+
+    /**
+     * @var InboundMessagesSync
+     */
+    private $inbound;
+
+    /**
+     * SyncSQSMessagesCommand constructor.
+     * @param InboundMessagesSync $inbound
+     */
+    public function __construct(InboundMessagesSync $inbound)
+    {
+        parent::__construct();
+
+        $this->inbound = $inbound;
+    }
 
     /**
      * @throws AWSSQSServerException
@@ -46,7 +62,7 @@ class SyncSQSMessagesCommand extends Command
         $resultMessage = self::SYNC_SUCCESS;
 
         try {
-            $this->dispatch(new SyncAllAwsSqsMessagesJob($this->argument('queue')));
+            $this->inbound->handle($this->argument('queue'));
         } catch (AWSSQSServerException $exc) {
             $resultMessage = $exc->getMessage();
         } catch (NoMessagesToSyncException $exc) {
@@ -61,7 +77,7 @@ class SyncSQSMessagesCommand extends Command
             $resultMessage = self::DATABASE_ERROR_MESSAGE;
         }
 
-        echo $resultMessage;
+        $this->info($resultMessage);
     }
 
 }

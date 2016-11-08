@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Laravel\Lumen\Testing\DatabaseMigrations;
 use Laravel\Lumen\Testing\DatabaseTransactions;
@@ -89,5 +90,13 @@ class BaseTestCase extends TestCase
         DB::setDefaultConnection($database);
 
         $this->artisan('migrate', $migrationParameters);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getArtisanOutput()
+    {
+        return $test = trim(Artisan::output());
     }
 }
