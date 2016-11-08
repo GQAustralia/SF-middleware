@@ -4,10 +4,9 @@ use App\Action;
 use App\Message;
 use App\Services\SQSClientService;
 use App\Subscriber;
-use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
 
-class SyncSQSMessagesCommandTest extends BaseTestCase
+class SyncInboundMessagesCommandTest extends BaseTestCase
 {
     use AWSTestHelpers;
 
@@ -58,7 +57,7 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
     {
         $this->artisan('inbound:sync', ['queue' => 'nonExistingQueue']);
 
-        $this->assertEquals('The specified queue does not exist for this wsdl version.', $this->getActualOutput());
+        $this->assertEquals('The specified queue does not exist for this wsdl version.', $this->getArtisanOutput());
     }
 
     /** @test */
@@ -66,7 +65,7 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
     {
         $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()]);
 
-        $this->assertEquals('No available Queues Messages for sync.', $this->getActualOutput());
+        $this->assertEquals('No available Queues Messages for sync.', $this->getArtisanOutput());
 
     }
 
@@ -77,7 +76,7 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
 
         $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_SAMPLE()]);
 
-        $this->assertEquals('Database error please contact your Administrator.', $this->getActualOutput());
+        $this->assertEquals('Database error please contact your Administrator.', $this->getArtisanOutput());
     }
 
     /** @test */
@@ -89,7 +88,7 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
 
         sleep(10);
 
-        $this->assertEquals('No valid messages from queue to sync.', $this->getActualOutput());
+        $this->assertEquals('No valid messages from queue to sync.', $this->getArtisanOutput());
     }
 
     /** @test */
@@ -117,7 +116,7 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
 
         sleep(10);
 
-        $this->assertEquals('Database already synced.', $this->getActualOutput());
+        $this->assertEquals('Database already synced.', $this->getArtisanOutput());
     }
 
     /** @test */
@@ -134,7 +133,7 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
 
         $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_SAMPLE()]);
 
-        $this->assertEquals('Insert Ignore Bulk Error.', $this->getActualOutput());
+        $this->assertEquals('Insert Ignore Bulk Error.', $this->getArtisanOutput());
     }
 
     /** @test */
@@ -157,7 +156,7 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
 
         $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_SAMPLE()]);
 
-        $this->assertEquals('Sync Successful.', $this->getActualOutput());
+        $this->assertEquals('Sync Successful.', $this->getArtisanOutput());
     }
 
     /**
@@ -194,5 +193,14 @@ class SyncSQSMessagesCommandTest extends BaseTestCase
             ->get('Messages');
 
         return array_first($message);
+    }
+
+    /**
+     * @param string $message
+     * @return string
+     */
+    private function trimMessage($message)
+    {
+        return trim($message);
     }
 }

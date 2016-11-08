@@ -8,6 +8,7 @@ use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Services\InboundMessagesSync;
+use App\Services\OutboundService;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Http\ResponseFactory;
 
@@ -72,5 +73,16 @@ class MessageQueueController extends Controller
         }
 
         return $this->responseFactory->make(self::SYNC_SUCCESS, self::SUCCESS_STATUS_CODE);
+    }
+
+    /**
+     * test for zoho
+     *
+     * @codeCoverageIgnore
+     */
+    public function testZoho()
+    {
+        $outboundService = new OutboundService();
+        $outboundService->sendMessagesToSalesforce();
     }
 }

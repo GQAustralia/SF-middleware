@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Routing\ProvidesConvenienceMethods;
 
-class SyncSQSMessagesCommand extends Command
+class SyncInboundMessagesCommand extends Command
 {
     use ProvidesConvenienceMethods;
 
@@ -29,7 +29,7 @@ class SyncSQSMessagesCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Calls the MessageQueueController with dynamic parameter queue name.';
+    protected $description = 'Sync Inbound AWS Messages';
 
     /**
      * @var InboundMessagesSync
@@ -77,7 +77,7 @@ class SyncSQSMessagesCommand extends Command
             $resultMessage = self::DATABASE_ERROR_MESSAGE;
         }
 
-        echo $resultMessage;
+        $this->info($resultMessage);
     }
 
 }
