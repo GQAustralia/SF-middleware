@@ -2,11 +2,16 @@
 
 namespace App\Console\Commands;
 
+use App\Exceptions\AWSSQSServerException;
+use App\Exceptions\NoMessagesToSyncException;
 use Illuminate\Console\Command;
-use App\Services\OutboundService;
+use App\Services\OutboundMessageSyncService;
+use Laravel\Lumen\Routing\ProvidesConvenienceMethods;
 
 class SyncOutboundMessagesCommand extends Command
 {
+    use ProvidesConvenienceMethods;
+
     const SYNC_SUCCESS = 'Sync Successful.';
 
     /**
@@ -14,7 +19,7 @@ class SyncOutboundMessagesCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'outbound:sync';
+    protected $signature = 'outbound:sync {queue=CRMOutboundQueue}';
 
     /**
      * The console command description.
@@ -22,13 +27,20 @@ class SyncOutboundMessagesCommand extends Command
      * @var string
      */
     protected $description = 'Sync Outbound AWS Messages';
+    /**
+     * @var OutboundMessageSyncService
+     */
+    private $outbound;
 
     /**
      * OutboundSync constructor.
+     * @param OutboundMessageSyncService $outbound
      */
-    public function __construct()
+    public function __construct(OutboundMessageSyncService $outbound)
     {
         parent::__construct();
+
+        $this->outbound = $outbound;
     }
 
     /**
@@ -38,9 +50,14 @@ class SyncOutboundMessagesCommand extends Command
      */
     public function fire()
     {
-        $outboundService = new OutboundService();
-        $outboundService->sendMessagesToSalesforce();
+        $resultMessage = self::SYNC_SUCCESS;
 
-        $this->info(self::SYNC_SUCCESS);
+        try {
+            $this->outbound->handle($this->argument('queue'));
+        } catch (AWSSQSServerException $exc) {
+            $resultMessage = $exc->getMessage();
+        }
+
+        $this->info($resultMessage);
     }
 }

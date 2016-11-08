@@ -84,7 +84,6 @@ $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\RepositoryServiceProvider::class);
 // $app->register(App\Providers\AuthServiceProvider::class);
 $app->register(App\Providers\EventServiceProvider::class);
-$app->register(App\Providers\CommandServiceProvider::class);
 $app->register(MichaelB\LumenMake\LumenMakeServiceProvider::class);
 $app->register(Davispeixoto\Laravel5Salesforce\SalesforceServiceProvider::class);
 
@@ -108,8 +107,8 @@ $app->configure('aws');
 $app->configure('url');
 $app->configure('salesforcezohomap');
 
-if (!class_exists('Salesforce')) {
-    class_alias(SalesforceFacade::class, 'Salesforce');
+if (!class_exists('Salesforcer')) {
+    class_alias(SalesforceFacade::class, 'Salesforcer');
 }
 
 return $app;

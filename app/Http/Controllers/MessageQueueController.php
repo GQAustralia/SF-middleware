@@ -8,7 +8,7 @@ use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Services\InboundMessagesSync;
-use App\Services\OutboundService;
+use App\Services\OutboundMessageSyncService;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Http\ResponseFactory;
 
@@ -82,7 +82,7 @@ class MessageQueueController extends Controller
      */
     public function testZoho()
     {
-        $outboundService = new OutboundService();
+        $outboundService = new OutboundMessageSyncService();
         $outboundService->sendMessagesToSalesforce();
     }
 }

@@ -6,7 +6,7 @@
  */
 namespace App\Services;
 
-use Salesforce;
+use Davispeixoto\Laravel5Salesforce\Salesforce;
 use MarkWilson\XmlToJson;
 
 /**
@@ -16,13 +16,18 @@ use MarkWilson\XmlToJson;
  */
 class OutboundSalesforceService
 {
+    /**
+     * @var Salesforce
+     */
+    private $salesforce;
 
     /**
      * OutboundSalesforceService constructor.
+     * @param Salesforce $salesforce
      */
-    public function __construct()
+    public function __construct(Salesforce $salesforce)
     {
-        
+        $this->salesforce = $salesforce;
     }
 
     /**
@@ -325,7 +330,14 @@ class OutboundSalesforceService
     private function processUpdate($objectName, $salesForceObject)
     {
         try {
+
+            echo 'before';
+           // $updateResponse = $this->salesforce->;
             $updateResponse = Salesforce::update(array($salesForceObject), $objectName);
+
+            echo 'after';
+
+            print_r($updateResponse);
             $returnResponse = $updateResponse[0];
             echo '<pre>';
             var_dump($returnResponse);

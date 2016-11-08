@@ -65,7 +65,7 @@ class SyncInboundMessagesCommandTest extends BaseTestCase
     {
         $this->artisan('inbound:sync', ['queue' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()]);
 
-        $this->assertEquals('No available Queues Messages for sync.', $this->getArtisanOutput());
+        $this->assertEquals('No available queue messages for sync.', $this->getArtisanOutput());
 
     }
 
