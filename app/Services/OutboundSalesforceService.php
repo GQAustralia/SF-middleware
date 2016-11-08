@@ -454,12 +454,12 @@ class OutboundSalesforceService
         $objectName = $mappedData['object'];
         if (!empty($mappedData['fields'])) {
             if (isset($mappedData['fields']["Email"])) {
-                $lead = $this->isLeadChatExists($mappedData['fields']["Email"]);
+                $lead = $this->isContactChatExists($mappedData['fields']["Email"]);
                 if ($lead !== false) {
                     $mappedData['fields']["Chat_Transcript__c"] = $lead["Chat_Transcript__c"] . "\n ========== \n" . $mappedData['fields']["Chat_Transcript__c"];
                     $mappedData['fields']["Id"] = $lead["Id"];
-                    if ($lead["Status"] != 'Closed') {
-                        $mappedData['fields']['Status'] = 'New Lead';
+                    if ($lead["Status__c"] != 'Closed') {
+                        $mappedData['fields']['Status__c'] = 'New Contact';
                         $mappedData['fields']['Pushed_To_CS__c'] = 'False';
                     }
 
@@ -475,14 +475,17 @@ class OutboundSalesforceService
      * @param type $email
      * @return boolean
      */
-    private function isLeadChatExists($email)
+    private function isContactChatExists($email)
     {
         try {
-            $query = 'SELECT Id, Chat_Transcript__c, Status FROM Lead WHERE Email = ' . "'" . $email . "'";
+            $query = 'SELECT Id, Chat_Transcript__c, Status__c FROM Contact WHERE Email = ' . "'" . $email . "'";
             $response = Salesforce::query(($query));
             if (count($response->records) > 0)
                 foreach ($response->records as $record) {
-                    return ["Id" => $record->Id, "Chat_Transcript__c" => $record->Chat_Transcript__c, "Status" => $record->Status];
+                    $Id = (!empty($record->Id))?$record->Id:'';
+                    $Chat_Transcript__c = (!empty($record->Chat_Transcript__c))?$record->Chat_Transcript__c:'';
+                    $Status__c= (!empty($record->Status__c))?$record->Status__c:'';
+                    return ["Id" => $Id, "Chat_Transcript__c" => $Chat_Transcript__c, "Status__c" => $Status__c];
                 }
             return false;
         } catch (\Exception $ex) {
