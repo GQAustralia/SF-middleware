@@ -14,8 +14,8 @@ class CreateTableSalesforceLog extends Migration
     {
         Schema::create('salesforce_log', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('object_name');
-            $table->integer('message');
+            $table->string('object_name');
+            $table->text('message');
             $table->text('response_body');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');

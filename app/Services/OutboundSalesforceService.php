@@ -318,7 +318,7 @@ class OutboundSalesforceService
             $returnResponse = $createResponse[0];
 
             $this->salesForceLog->create(
-                $this->buildSalesForceLogFactory($objectName, [$salesForceObject], $returnResponse)
+                $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$returnResponse])
             );
 
             echo '<pre>';
@@ -330,6 +330,7 @@ class OutboundSalesforceService
 
             return $returnResponse->success;
         } catch (Exception $ex) {
+            $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$ex->getMessage()]);
             return false;
         }
     }
@@ -346,7 +347,7 @@ class OutboundSalesforceService
             $returnResponse = $updateResponse[0];
 
             $this->salesForceLog->create(
-                $this->buildSalesForceLogFactory($objectName, [$salesForceObject], $returnResponse)
+                $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$returnResponse])
             );
 
             echo '<pre>';
@@ -358,6 +359,7 @@ class OutboundSalesforceService
 
             return $returnResponse->success;
         } catch (Exception $ex) {
+            $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$ex->getMessage()]);
             return false;
         }
     }
@@ -520,15 +522,15 @@ class OutboundSalesforceService
     /**
      * @param string $objectName
      * @param array $message
-     * @param null $response
+     * @param array $response
      * @return mixed
      */
-    private function buildSalesForceLogFactory($objectName, array $message, $response = null)
+    private function buildSalesForceLogFactory($objectName, array $message, array $response = [])
     {
         return factory(SalesForceLog::class)->make([
             'object_name' => $objectName,
-            'message' => $message,
-            'response' => $response
+            'message' => json_encode($message),
+            'response_body' => json_encode($response),
         ])->toArray();
     }
 }
