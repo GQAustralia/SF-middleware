@@ -42,7 +42,6 @@ class OutboundMessageSyncService
         $this->outboundSalesforceService = $outboundSalesforceService;
     }
 
-
     /**
      * @param null $queueName
      * @throws NoMessagesToSyncException
@@ -52,7 +51,6 @@ class OutboundMessageSyncService
         $queueName = (!($queueName) ? self::OUTBOUND_QUEUE : $queueName);
 
         $queueUrl = $this->getQueueUrlOrFail($queueName);
-
         $messages = $this->getQueueMessages($queueUrl);
 
         if ($messages !== false) {
@@ -65,15 +63,15 @@ class OutboundMessageSyncService
                     }
                 }
 
-                $response = $this->outboundSalesforceService->sendToSalesforce($body, $attributes);
+                $result = $this->outboundSalesforceService->sendToSalesforce($body, $attributes);
 
-                if ($response) {
-                  /*  $mid = $message['MessageId'];
-                    $reciptHandles = $message['ReceiptHandle'];
-                    $result = $this->sqs->client()->deleteMessage([
-                        'QueueUrl' => $this->queueURI,
-                        'ReceiptHandle' => $reciptHandles,
-                    ]);*/
+                if ($result) {
+                    /*  $mid = $message['MessageId'];
+                      $reciptHandles = $message['ReceiptHandle'];
+                      $result = $this->sqs->client()->deleteMessage([
+                          'QueueUrl' => $this->queueURI,
+                          'ReceiptHandle' => $reciptHandles,
+                      ]);*/
                 }
             }
             $this->handle($queueName);
