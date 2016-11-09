@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
-class CreateTableSalesforceLog extends Migration
+class CreateTableOutboundMessage extends Migration
 {
     /**
      * Run the migrations.
@@ -12,11 +12,12 @@ class CreateTableSalesforceLog extends Migration
      */
     public function up()
     {
-        Schema::create('salesforce_log', function (Blueprint $table) {
+        Schema::create('outbound_message', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('object_name');
-            $table->text('message');
-            $table->text('response_body');
+            $table->string('message_id');
+            $table->text('message_body');
+            $table->text('message_attributes');
+            $table->string('status');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -29,6 +30,6 @@ class CreateTableSalesforceLog extends Migration
      */
     public function down()
     {
-        Schema::drop('salesforce_log');
+        Schema::drop('outbound_message');
     }
 }

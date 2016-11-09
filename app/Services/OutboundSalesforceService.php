@@ -6,8 +6,8 @@
  */
 namespace App\Services;
 
-use App\Repositories\Contracts\SalesForceLogInterface;
-use App\SalesForceLog;
+use App\Repositories\Contracts\OutboundMessageInterface;
+use App\OutboundMessage;
 use Exception;
 use MarkWilson\XmlToJson;
 use Salesforce;
@@ -20,15 +20,15 @@ use Salesforce;
 class OutboundSalesforceService
 {
     /**
-     * @var SalesForceLogInterface
+     * @var OutboundMessageInterface
      */
     private $salesForceLog;
 
     /**
      * OutboundSalesforceService constructor.
-     * @param SalesForceLogInterface $salesForceLog
+     * @param OutboundMessageInterface $salesForceLog
      */
-    public function __construct(SalesForceLogInterface $salesForceLog)
+    public function __construct(OutboundMessageInterface $salesForceLog)
     {
         $this->salesForceLog = $salesForceLog;
     }
@@ -527,7 +527,7 @@ class OutboundSalesforceService
      */
     private function buildSalesForceLogFactory($objectName, array $message, array $response = [])
     {
-        return factory(SalesForceLog::class)->make([
+        return factory(OutboundMessage::class)->make([
             'object_name' => $objectName,
             'message' => json_encode($message),
             'response_body' => json_encode($response),
