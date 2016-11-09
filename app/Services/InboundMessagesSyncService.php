@@ -16,7 +16,7 @@ use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 use Aws\Sqs\Exception\SqsException;
 use Illuminate\Database\QueryException;
 
-class InboundMessagesSync
+class InboundMessagesSyncService
 {
     const INBOUND_QUEUE = 'CRMInwardQueue';
 

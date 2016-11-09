@@ -7,7 +7,7 @@ use App\Exceptions\DatabaseAlreadySyncedException;
 use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
-use App\Services\InboundMessagesSync;
+use App\Services\InboundMessagesSyncService;
 use App\Services\OutboundMessageSyncService;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Http\ResponseFactory;
@@ -27,16 +27,16 @@ class MessageQueueController extends Controller
     protected $responseFactory;
 
     /**
-     * @var InboundMessagesSync
+     * @var InboundMessagesSyncService
      */
-    private $inbound;
+    protected $inbound;
 
     /**
      * MessageQueueController constructor.
      * @param ResponseFactory $responseFactory
-     * @param InboundMessagesSync $inbound
+     * @param InboundMessagesSyncService $inbound
      */
-    public function __construct(ResponseFactory $responseFactory, InboundMessagesSync $inbound)
+    public function __construct(ResponseFactory $responseFactory, InboundMessagesSyncService $inbound)
     {
         $this->responseFactory = $responseFactory;
         $this->inbound = $inbound;
@@ -82,7 +82,9 @@ class MessageQueueController extends Controller
      */
     public function testZoho()
     {
-        $outboundService = new OutboundMessageSyncService();
-        $outboundService->sendMessagesToSalesforce();
+        //****You need to use constructor dependency injection to execute this ****
+
+        //$outboundService = new OutboundMessageSyncService();
+        //$outboundService->sendMessagesToSalesforce();
     }
 }

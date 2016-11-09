@@ -7,13 +7,13 @@ use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Message;
-use App\Services\InboundMessagesSync;
+use App\Services\InboundMessagesSyncService;
 use App\Services\SQSClientService;
 use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
 use Illuminate\Database\QueryException;
 
-class InboundMessagesSyncTest extends BaseTestCase
+class InboundMessagesSyncServiceTest extends BaseTestCase
 {
     use AWSTestHelpers;
 
@@ -26,7 +26,7 @@ class InboundMessagesSyncTest extends BaseTestCase
         parent::setUp();
 
         $this->sqs = new SQSClientService();
-        $this->inbound = $this->app->make(InboundMessagesSync::class);
+        $this->inbound = $this->app->make(InboundMessagesSyncService::class);
 
         $this->withoutEvents();
     }

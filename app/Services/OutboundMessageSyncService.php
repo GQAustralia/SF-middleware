@@ -66,12 +66,12 @@ class OutboundMessageSyncService
                 $result = $this->outboundSalesforceService->sendToSalesforce($body, $attributes);
 
                 if ($result) {
-                    /*  $mid = $message['MessageId'];
-                      $reciptHandles = $message['ReceiptHandle'];
-                      $result = $this->sqs->client()->deleteMessage([
-                          'QueueUrl' => $this->queueURI,
-                          'ReceiptHandle' => $reciptHandles,
-                      ]);*/
+                    $mid = $message['MessageId'];
+                    $reciptHandles = $message['ReceiptHandle'];
+                    $result = $this->sqs->client()->deleteMessage([
+                        'QueueUrl' => $this->queueURI,
+                        'ReceiptHandle' => $reciptHandles,
+                    ]);
                 }
             }
             $this->handle($queueName);

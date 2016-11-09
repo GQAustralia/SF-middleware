@@ -14,6 +14,7 @@ class SalesForceLogRepositoryEloquent extends RepositoryEloquent implements Sale
 
     /**
      * SalesForceLogRepository constructor.
+     *
      * @param SalesForceLog $salesForceLog
      */
     public function __construct(SalesForceLog $salesForceLog)
