@@ -107,8 +107,8 @@ $app->configure('aws');
 $app->configure('url');
 $app->configure('salesforcezohomap');
 
-if (!class_exists('Salesforcer')) {
-    class_alias(SalesforceFacade::class, 'Salesforcer');
+if (!class_exists('Salesforce')) {
+    class_alias(SalesforceFacade::class, 'Salesforce');
 }
 
 return $app;
