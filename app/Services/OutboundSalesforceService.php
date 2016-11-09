@@ -530,7 +530,7 @@ class OutboundSalesforceService
         return factory(SalesForceLog::class)->make([
             'object_name' => $objectName,
             'message' => json_encode($message),
-            'response' => json_encode($response),
+            'response_body' => json_encode($response),
         ])->toArray();
     }
 }
