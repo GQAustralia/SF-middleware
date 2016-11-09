@@ -6,7 +6,7 @@
  */
 namespace App\Services;
 
-use Davispeixoto\Laravel5Salesforce\Salesforce;
+use Salesforce;
 use MarkWilson\XmlToJson;
 
 /**
