@@ -109,7 +109,7 @@ class InboundMessagesSync
         $messages = collect($collectedMessages)->unique('MessageId')->toArray();
 
         if (!$messages) {
-            throw new NoMessagesToSyncException('No available Queues Messages for sync.');
+            throw new NoMessagesToSyncException('No available queue messages for sync.');
         }
 
         return $messages;

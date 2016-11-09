@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Console\Commands\SyncInboundMessagesCommand;
+use App\Console\Commands\SyncOutboundMessagesCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
 use Laravelista\LumenVendorPublish\VendorPublishCommand;
@@ -16,6 +17,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         SyncInboundMessagesCommand::class,
+        SyncOutboundMessagesCommand::class,
         VendorPublishCommand::class
     ];
 

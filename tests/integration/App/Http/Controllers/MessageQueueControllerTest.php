@@ -70,7 +70,7 @@ class MessageQueueControllerTest extends BaseTestCase
 
         $this->post('sync/' . $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE());
 
-        $this->assertEquals('No available Queues Messages for sync.', $this->getContent());
+        $this->assertEquals('No available queue messages for sync.', $this->getContent());
         $this->assertResponseOk();
     }
 

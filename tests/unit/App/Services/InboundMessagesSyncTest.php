@@ -118,7 +118,7 @@ class InboundMessagesSyncTest extends BaseTestCase
      */
     public function it_throws_an_exception_when_messages_does_not_exist_in_a_queue()
     {
-        $this->setExpectedException(NoMessagesToSyncException::class, 'No available Queues Messages for sync.');
+        $this->setExpectedException(NoMessagesToSyncException::class, 'No available queue messages for sync.');
 
         factory(Action::class)->create(['name' => 'changed']);
 
