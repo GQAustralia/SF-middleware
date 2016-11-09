@@ -9,6 +9,22 @@ class TestCase extends Laravel\Lumen\Testing\TestCase
      */
     public function createApplication()
     {
-        return require __DIR__.'/../bootstrap/app.php';
+        return require __DIR__ . '/../bootstrap/app.php';
+    }
+
+    public function setUp()
+    {
+        parent::setUp();
+
+        $this->refreshApplication();
+
+        $this->artisan('migrate');
+    }
+
+    public function tearDown()
+    {
+        $this->artisan('migrate:reset');
+
+        parent::tearDown();
     }
 }
