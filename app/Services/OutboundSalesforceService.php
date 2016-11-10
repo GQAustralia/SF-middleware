@@ -48,7 +48,7 @@ class OutboundSalesforceService
      * Should be refactored in the future as is storing of 'database' outboundId is of no concern of the SalesForceService
      * @return $this
      */
-    public function setLogId(int $logId)
+    public function setLogId($logId)
     {
         $this->logId = $logId;
 
