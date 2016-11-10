@@ -13,7 +13,7 @@ class OutboundMessageRepositoryEloquent extends RepositoryEloquent implements Ou
     protected $outboundMessageLog;
 
     /**
-     * SalesForceLogRepository constructor.
+     * OutboundMessageRepositoryEloquent constructor.
      *
      * @param OutboundMessage $outboundMessageLog
      */
@@ -28,5 +28,24 @@ class OutboundMessageRepositoryEloquent extends RepositoryEloquent implements Ou
     public function model()
     {
         return $this->outboundMessageLog;
+    }
+
+    /**
+     * @param array $input
+     * @param mixed $field
+     * @return null
+     */
+    public function update(array $input, $field)
+    {
+        $message = $this->outboundMessageLog->where('id', $field)->first();
+
+        if (!$message) {
+            return null;
+        }
+
+        $message->fill($input);
+        $message->save();
+
+        return $message;
     }
 }

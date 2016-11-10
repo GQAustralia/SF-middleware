@@ -14,4 +14,14 @@ class OutboundMessage extends Model
      * @var array
      */
     protected $fillable = ['message_id', 'message_body', 'message_attributes', 'status'];
+
+    /**
+     * An Outbound message has one message log
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function log()
+    {
+        return $this->hasOne(OutboundMessageLog::class, 'sent_message');
+    }
 }

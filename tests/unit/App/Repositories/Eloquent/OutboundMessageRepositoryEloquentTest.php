@@ -105,4 +105,28 @@ class OutboundMessageRepositoryEloquentTest extends BaseTestCase
         $this->assertEmpty($result);
         $this->assertInstanceOf(Collection::class, $result);
     }
+
+    /** @test */
+    public function it_returns_null_on_update_when_outbound_message_does_not_exist()
+    {
+        $result = $this->repository->update(['status' => 'sent'], 'unknownId');
+
+        $this->assertNull($result);
+    }
+
+    /** @test */
+    public function it_returns_outbound_message_on_update_on_successful_update()
+    {
+        $message = factory(OutboundMessage::class)->create(['status' => 'failed']);
+
+        $updateInput = ['status' => 'sent'];
+
+        $result = $this->repository->update($updateInput, $message->id);
+
+        $this->assertInstanceOf(OutboundMessage::class, $result);
+        $this->seeInDatabase('outbound_message', [
+            'message_id' => $message->message_id,
+            'status' => 'sent'
+        ]);
+    }
 }
