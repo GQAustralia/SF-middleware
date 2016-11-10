@@ -2,27 +2,27 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\Message;
-use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\InboundMessage;
+use App\Repositories\Contracts\InboundMessageRepositoryInterface;
 use App\Repositories\Exceptions\DuplicateRecordsException;
 use App\Repositories\Exceptions\FailedSyncManyToMany;
 use App\Resolvers\InsertIgnoreBulkMySqlResolver;
 use Illuminate\Support\Facades\DB;
 
-class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRepositoryInterface
+class InboundMessageRepositoryEloquent extends RepositoryEloquent implements InboundMessageRepositoryInterface
 {
     use InsertIgnoreBulkMySqlResolver;
 
     /**
-     * @var Message
+     * @var InboundMessage
      */
     private $message;
 
     /**
      * MessageRepositoryEloquent constructor.
-     * @param Message $message
+     * @param InboundMessage $message
      */
-    public function __construct(Message $message)
+    public function __construct(InboundMessage $message)
     {
         $this->message = $message;
     }
@@ -54,12 +54,12 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
     }
 
     /**
-     * @param Message $message
+     * @param InboundMessage $message
      * @param array $input
-     * @return Message
+     * @return InboundMessage
      * @throws FailedSyncManyToMany
      */
-    public function attachSubscriber(Message $message, array $input)
+    public function attachSubscriber(InboundMessage $message, array $input)
     {
         if (empty($message->id)) {
             throw new FailedSyncManyToMany('Message does not exist.');
@@ -81,7 +81,7 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
     public function insertIgnoreBulk(array $messages)
     {
         $insertFields = ['message_id', 'action_id', 'message_content', 'completed','created_at', 'updated_at'];
-        $query = $this->resolve('message', $insertFields, $messages);
+        $query = $this->resolve('inbound_message', $insertFields, $messages);
 
         return DB::affectingStatement($query);
     }
@@ -91,7 +91,7 @@ class MessageRepositoryEloquent extends RepositoryEloquent implements MessageRep
      * @param array $value
      * @param array $with
      * @param array $optionalWhere
-     * @return Message
+     * @return InboundMessage
      */
     public function findAllWhereIn($attribute, $value, $with = [], $optionalWhere = [])
     {

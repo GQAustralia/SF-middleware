@@ -2,9 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
-class CreateSubscriberTable extends Migration
+class CreateTableInboundMessageLog extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +12,11 @@ class CreateSubscriberTable extends Migration
      */
     public function up()
     {
-        Schema::create('subscriber', function (Blueprint $table) {
+        Schema::create('inbound_message_log', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('platform_name');
-            $table->string('url');
+            $table->integer('inbound_sent_message_id');
+            $table->integer('response_code');
+            $table->text('response_body');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -29,6 +29,6 @@ class CreateSubscriberTable extends Migration
      */
     public function down()
     {
-        Schema::drop('subscriber');
+        Schema::drop('inbound_message_log');
     }
 }

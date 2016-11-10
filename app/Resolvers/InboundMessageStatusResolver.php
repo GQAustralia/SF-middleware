@@ -2,20 +2,20 @@
 
 namespace App\Resolvers;
 
-use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\Repositories\Contracts\InboundMessageRepositoryInterface;
 
-class MessageStatusResolver
+class InboundMessageStatusResolver
 {
     /**
-     * @var MessageRepositoryInterface
+     * @var InboundMessageRepositoryInterface
      */
     protected $message;
 
     /**
      * MessageStatusResolver constructor.
-     * @param MessageRepositoryInterface $message
+     * @param InboundMessageRepositoryInterface $message
      */
-    public function __construct(MessageRepositoryInterface $message)
+    public function __construct(InboundMessageRepositoryInterface $message)
     {
         $this->message = $message;
     }

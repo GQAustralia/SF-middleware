@@ -1,19 +1,25 @@
 <?php
 
 use App\Action;
-use App\Message;
-use App\Repositories\Eloquent\MessageRepositoryEloquent;
-use App\Resolvers\MessageStatusResolver;
+use App\InboundMessage;
+use App\Repositories\Eloquent\InboundMessageRepositoryEloquent;
+use App\Resolvers\InboundMessageStatusResolver;
 use App\Subscriber;
 
-class MessageStatusResolverTest extends BaseTestCase
+class InboundMessageStatusResolverTest extends BaseTestCase
 {
     public function setUp()
     {
         parent::setUp();
 
-        $this->resolver = $this->app->make(MessageStatusResolver::class);
-        $this->repository = $this->app->make(MessageRepositoryEloquent::class);
+        $this->resolver = $this->app->make(InboundMessageStatusResolver::class);
+        $this->repository = $this->app->make(InboundMessageRepositoryEloquent::class);
+    }
+
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
     }
 
     /** @test */
@@ -34,7 +40,7 @@ class MessageStatusResolverTest extends BaseTestCase
     public function it_updates_message_status_to_complete_when_subscriber_url_are_all_sent()
     {
         $queue = factory(Action::class)->create();
-        $message = factory(Message::class)->create(['action_id' => $queue->id, 'completed' => 'N']);
+        $message = factory(InboundMessage::class)->create(['action_id' => $queue->id, 'completed' => 'N']);
 
         $subscriber = factory(Subscriber::class)->create();
         $subscriberSecond = factory(Subscriber::class)->create();

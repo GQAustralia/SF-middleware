@@ -2,13 +2,13 @@
 
 namespace App\Events;
 
-class SqsMessagesWasSynced extends Event
+class InboundMessagesWasSynced extends Event
 {
     public $messageIdList = [];
 
     /**
-     * SqsMessagesWasSynced constructor.
-     * @param $messageIdList
+     * InboundMessagesWasSynced constructor.
+     * @param array $messageIdList
      */
     public function __construct($messageIdList)
     {

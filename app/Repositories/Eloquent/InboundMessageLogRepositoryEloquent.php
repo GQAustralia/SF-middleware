@@ -3,21 +3,22 @@
 namespace App\Repositories\Eloquent;
 
 use App\Action;
-use App\MessageLog;
-use App\Repositories\Contracts\MessageLogRepositoryInterface;
+use App\InboundMessageLog;
+use App\Repositories\Contracts\InboundMessageLogRepositoryInterface;
 
-class MessageLogRepositoryEloquent extends RepositoryEloquent implements MessageLogRepositoryInterface
+class InboundMessageLogRepositoryEloquent extends RepositoryEloquent implements InboundMessageLogRepositoryInterface
 {
     /**
-     * @var SentMessage
+     * @var InboundMessageLog
      */
     private $messageLog;
 
     /**
-     * MessageLogRepositoryEloquent constructor.
-     * @param MessageLog $messageLog
+     * InboundMessageLogRepositoryEloquent constructor.
+     *
+     * @param InboundMessageLog $messageLog
      */
-    public function __construct(MessageLog $messageLog)
+    public function __construct(InboundMessageLog $messageLog)
     {
         $this->messageLog = $messageLog;
     }

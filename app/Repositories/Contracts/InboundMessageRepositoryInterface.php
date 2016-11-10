@@ -2,16 +2,16 @@
 
 namespace App\Repositories\Contracts;
 
-use App\Message;
+use App\InboundMessage;
 
-interface MessageRepositoryInterface extends RepositoryInterface
+interface InboundMessageRepositoryInterface extends RepositoryInterface
 {
     /**
-     * @param Message $message
+     * @param InboundMessage $message
      * @param array $input
      * @return mixed
      */
-    public function attachSubscriber(Message $message, array $input);
+    public function attachSubscriber(InboundMessage $message, array $input);
 
     /**
      * @param array $insertUpdateBulk

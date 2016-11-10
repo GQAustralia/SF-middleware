@@ -1,8 +1,7 @@
 <?php
 
-use App\OutboundMessage;
-use App\Repositories\Eloquent\OutboundMessageLogRepositoryEloquent;
 use App\OutboundMessageLog;
+use App\Repositories\Eloquent\OutboundMessageLogRepositoryEloquent;
 use Illuminate\Support\Collection;
 
 class OutboundMessageLogRepositoryEloquentTest extends BaseTestCase
@@ -14,6 +13,12 @@ class OutboundMessageLogRepositoryEloquentTest extends BaseTestCase
         parent::setUp();
 
         $this->repository = $this->app->make(OutboundMessageLogRepositoryEloquent::class);
+    }
+
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
     }
 
     /** @test */

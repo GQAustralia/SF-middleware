@@ -1,17 +1,23 @@
 <?php
 
 use App\Action;
-use App\Message;
+use App\InboundMessage;
 use App\Subscriber;
 
-class MessageTest extends TestCase
+class InboundMessageTest extends BaseTestCase
 {
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
     /**
      * @test
      */
     public function it_belongs_to_a_action()
     {
-        $model = Mockery::mock('App\Message[belongsTo]');
+        $model = Mockery::mock('App\InboundMessage[belongsTo]');
 
         $model->shouldReceive('belongsTo')->with(Action::class)->andReturn(true);
 
@@ -22,11 +28,11 @@ class MessageTest extends TestCase
     public function it_returns_action_on_calling_on_a_belongs_to_action_relationship()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 2)->create([
+        $message = factory(InboundMessage::class, 2)->create([
             'action_id' => $action->id
         ]);
 
-        $messageWithQueue = Message::with('action')->where('action_id', $action->id)->get();
+        $messageWithQueue = InboundMessage::with('action')->where('action_id', $action->id)->get();
 
         $this->assertInstanceOf(Action::class, $messageWithQueue[0]->action);
         $this->assertEquals(2, count($messageWithQueue));
@@ -37,9 +43,9 @@ class MessageTest extends TestCase
      */
     public function it_belongs_to_many_subscriber()
     {
-        $model = Mockery::mock('App\Message[belongsToMany]');
+        $model = Mockery::mock('App\InboundMessage[belongsToMany]');
 
-        $model->shouldReceive('belongsToMany')->with(Subscriber::class, 'sent_message')->andReturnSelf();
+        $model->shouldReceive('belongsToMany')->with(Subscriber::class, 'inbound_sent_message')->andReturnSelf();
         $model->shouldReceive('withPivot')->andReturnSelf();
         $model->shouldReceive('withTimestamps')->andReturn(true);
 
@@ -50,7 +56,7 @@ class MessageTest extends TestCase
     public function it_returns_subscriber_on_calling_on_a_many_to_many_subscriber_relationship()
     {
         $subscriber = factory(Subscriber::class)->create();
-        $message = factory(Message::class)->create();
+        $message = factory(InboundMessage::class)->create();
 
         $message->subscriber()->attach([$subscriber->id => ['status' => 'sent']]);
 

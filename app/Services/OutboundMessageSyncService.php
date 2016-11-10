@@ -158,7 +158,7 @@ class OutboundMessageSyncService
      * @param int $outboundId
      * @return mixed
      */
-    private function setOutboundStatusToSent(int $outboundId)
+    private function setOutboundStatusToSent($outboundId)
     {
         return $this->outboundMessage->update(['status' => 'sent'], $outboundId);
     }
@@ -171,6 +171,6 @@ class OutboundMessageSyncService
      */
     private function deleteOutboundSQSMessage($queueUrl, $receiptHandle)
     {
-        return $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle]);
+        return $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle,]);
     }
 }

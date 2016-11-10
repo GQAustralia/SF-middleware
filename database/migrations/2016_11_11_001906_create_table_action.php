@@ -2,9 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
-class CreateMessageTable extends Migration
+class CreateTableAction extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +12,9 @@ class CreateMessageTable extends Migration
      */
     public function up()
     {
-        Schema::create('message', function (Blueprint $table) {
+        Schema::create('action', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('message_id')->unique();
-            $table->integer('action_id');
-            $table->text('message_content');
-            $table->enum('completed', ['Y', 'N'])->default('N');
+            $table->string('name');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -31,6 +27,6 @@ class CreateMessageTable extends Migration
      */
     public function down()
     {
-        Schema::drop('message');
+        Schema::drop('action');
     }
 }

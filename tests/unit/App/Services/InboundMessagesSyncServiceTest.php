@@ -6,7 +6,7 @@ use App\Exceptions\DatabaseAlreadySyncedException;
 use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
-use App\Message;
+use App\InboundMessage;
 use App\Services\InboundMessagesSyncService;
 use App\Services\SQSClientService;
 use Aws\Result;
@@ -29,6 +29,12 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
         $this->inbound = $this->app->make(InboundMessagesSyncService::class);
 
         $this->withoutEvents();
+    }
+
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
     }
 
     /** @test */
@@ -64,8 +70,8 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
             'AttributeNames' => ['ApproximateNumberOfMessages']
         ]);
 
-        $this->assertEquals($actionAttributes['Attributes']['ApproximateNumberOfMessages'], Message::all()->count());
-        $this->seeInDatabase('message', [
+        $this->assertEquals($actionAttributes['Attributes']['ApproximateNumberOfMessages'], InboundMessage::all()->count());
+        $this->seeInDatabase('inbound_message', [
             'message_id' => $message['MessageId'],
             'action_id' => $action->id,
             'message_content' => str_replace('"', '\'', $message['Body']),
@@ -138,7 +144,7 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
         while ($availableMessage = $this->getAQueueMessage($queueUrl)) {
-            factory(Message::class)->create([
+            factory(InboundMessage::class)->create([
                 'message_id' => $availableMessage['MessageId'],
                 'action_id' => $action->id,
                 'message_content' => $availableMessage['Body'],
@@ -197,8 +203,8 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
 
         $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
-        $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
-        $this->seeInDatabase('message', ['message_id' => $messageToSave]);
+        $this->notSeeInDatabase('inbound_message', ['message_id' => $messageToDisregard]);
+        $this->seeInDatabase('inbound_message', ['message_id' => $messageToSave]);
     }
 
     /** @test */
@@ -224,8 +230,8 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
 
         $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
-        $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
-        $this->seeInDatabase('message', ['message_id' => $messageToSave]);
+        $this->notSeeInDatabase('inbound_message', ['message_id' => $messageToDisregard]);
+        $this->seeInDatabase('inbound_message', ['message_id' => $messageToSave]);
     }
 
     /** @test */
@@ -251,8 +257,8 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
 
         $this->inbound->messageVisibility(30)->handle($this->QUEUE_NAME_SAMPLE());
 
-        $this->notSeeInDatabase('message', ['message_id' => $messageToDisregard]);
-        $this->seeInDatabase('message', ['message_id' => $messageToSave]);
+        $this->notSeeInDatabase('inbound_message', ['message_id' => $messageToDisregard]);
+        $this->seeInDatabase('inbound_message', ['message_id' => $messageToSave]);
     }
 
     /**
@@ -290,7 +296,7 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
 
         sleep(7);
 
-        Schema::table('message', function ($table) {
+        Schema::table('inbound_message', function ($table) {
             $table->dropColumn('message_id');
         });
 
@@ -306,7 +312,7 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
      */
     public function RESET_SQS()
     {
-        echo PHP_EOL . 'DELETING QUEUES CREATED FROM THIS TEST....' . PHP_EOL;
+        $this->printAlertMessageOnCLI('DELETING SAMPLE QUEUES CREATED FROM ' . get_class($this));
 
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
         $queueUrlWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
@@ -314,7 +320,7 @@ class InboundMessagesSyncServiceTest extends BaseTestCase
         $queueUrlResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueUrl]);
         $queueUrlWithNoMessagesResult = $this->sqs->client()->deleteQueue(['QueueUrl' => $queueUrlWithNoMessages]);
 
-        //sleep(60);
+        sleep(62);
 
         $this->assertInstanceOf(Result::class, $queueUrlResult);
         $this->assertInstanceOf(Result::class, $queueUrlWithNoMessagesResult);
