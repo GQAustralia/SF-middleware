@@ -158,7 +158,7 @@ class OutboundMessageSyncService
      * @param int $outboundId
      * @return mixed
      */
-    private function setOutboundStatusToSent(int $outboundId)
+    private function setOutboundStatusToSent($outboundId)
     {
         return $this->outboundMessage->update(['status' => 'sent'], $outboundId);
     }
