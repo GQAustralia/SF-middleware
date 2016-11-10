@@ -83,9 +83,9 @@ class OutboundMessageSyncService
 
                 if ($result) {
                     $this->setOutboundStatusToSent($outbound->id);
+                    $this->deleteOutboundSQSMessage($queueUrl, $message['ReceiptHandle']);
                 }
-
-                $this->deleteOutboundSQSMessage($queueUrl, $message['ReceiptHandle']);
+                
             }
             $this->handle($queueName);
         }
