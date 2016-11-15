@@ -1,10 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
-class CreateActionTable extends Migration
+class CreateTableSubscriber extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +12,10 @@ class CreateActionTable extends Migration
      */
     public function up()
     {
-        Schema::create('action', function (Blueprint $table) {
+        Schema::create('subscriber', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('name');
+            $table->string('platform_name');
+            $table->string('url');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -28,6 +28,6 @@ class CreateActionTable extends Migration
      */
     public function down()
     {
-        Schema::drop('action');
+        Schema::drop('subscriber');
     }
 }

@@ -171,6 +171,6 @@ class OutboundMessageSyncService
      */
     private function deleteOutboundSQSMessage($queueUrl, $receiptHandle)
     {
-        return $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle]);
+        return $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle,]);
     }
 }

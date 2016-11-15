@@ -22,6 +22,6 @@ class OutboundMessage extends Model
      */
     public function log()
     {
-        return $this->hasOne(OutboundMessageLog::class, 'sent_message');
+        return $this->hasOne(OutboundMessageLog::class, 'inbound_sent_message');
     }
 }

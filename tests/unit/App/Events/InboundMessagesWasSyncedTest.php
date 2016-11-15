@@ -1,10 +1,16 @@
 <?php
 
-use App\Events\SqsMessagesWasSynced;
+use App\Events\InboundMessagesWasSynced;
 use Faker\Factory as Faker;
 
-class SqsMessagesWasSyncedEventTest extends BaseTestCase
+class InboundMessagesWasSyncedTest extends BaseTestCase
 {
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
     /** @test */
     public function it_instantiate_new_instance_of_event()
     {
@@ -15,9 +21,9 @@ class SqsMessagesWasSyncedEventTest extends BaseTestCase
             $messageIds[] = $faker->shuffleString('abcdefghijklmnopqrstuvwxyz1234567890-');
         }
 
-        $event = new SqsMessagesWasSynced($messageIds);
+        $event = new InboundMessagesWasSynced($messageIds);
 
         $this->assertEquals($messageIds, $event->messageIdList);
-        $this->assertInstanceOf(SqsMessagesWasSynced::class, $event);
+        $this->assertInstanceOf(InboundMessagesWasSynced::class, $event);
     }
 }

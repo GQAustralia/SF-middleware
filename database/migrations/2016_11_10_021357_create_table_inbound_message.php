@@ -2,9 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
-class CreateMessageLogTable extends Migration
+class CreateTableInboundMessage extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +12,12 @@ class CreateMessageLogTable extends Migration
      */
     public function up()
     {
-        Schema::create('message_log', function (Blueprint $table) {
+        Schema::create('inbound_message', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('sent_message_id');
-            $table->integer('response_code');
-            $table->text('response_body');
+            $table->string('message_id')->unique();
+            $table->integer('action_id');
+            $table->text('message_content');
+            $table->enum('completed', ['Y', 'N'])->default('N');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -30,6 +30,6 @@ class CreateMessageLogTable extends Migration
      */
     public function down()
     {
-        Schema::drop('message_log');
+        Schema::drop('inbound_message');
     }
 }

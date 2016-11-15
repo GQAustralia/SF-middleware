@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Events\SqsMessagesWasSynced;
+use App\Events\InboundMessagesWasSynced;
 use App\Exceptions\AWSSQSServerException;
 use App\Exceptions\DatabaseAlreadySyncedException;
 use App\Exceptions\InsertIgnoreBulkException;
@@ -10,7 +10,7 @@ use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Exceptions\QueuesMessageDeleteException;
 use App\Repositories\Contracts\ActionRepositoryInterface;
-use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\Repositories\Contracts\InboundMessageRepositoryInterface;
 use App\Resolvers\DifferMessageInputDataToDatabase;
 use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 use Aws\Sqs\Exception\SqsException;
@@ -43,7 +43,7 @@ class InboundMessagesSyncService
     private $action;
 
     /**
-     * @var MessageRepositoryInterface
+     * @var InboundMessageRepositoryInterface
      */
     private $message;
 
@@ -51,12 +51,12 @@ class InboundMessagesSyncService
      * InboundMessagesSync constructor.
      * @param SQSClientService $sqs
      * @param ActionRepositoryInterface $action
-     * @param MessageRepositoryInterface $message
+     * @param InboundMessageRepositoryInterface $message
      */
     public function __construct(
         SQSClientService $sqs,
         ActionRepositoryInterface $action,
-        MessageRepositoryInterface $message
+        InboundMessageRepositoryInterface $message
     ) {
         $this->sqs = $sqs;
         $this->action = $action;
@@ -75,15 +75,49 @@ class InboundMessagesSyncService
 
         $queueUrl = $this->getQueueUrlOrFail($queueName);
         $queueMessages = $this->collectQueueMessagesOrFail($queueUrl);
-        $filteredQueueMessages = $this->removeDuplicateAndValidateIfDatabaseSynced($queueMessages);
-        $messagesForInsert = $this->buildMessagesPayloadForInsertOrFail($filteredQueueMessages);
+
+        $filteredMessages = $this->filterAndValidateMessages($queueMessages);
+        $messagesForInsert = $this->buildMessagesPayloadForInsertOrFail($filteredMessages);
 
         $this->insertBulkMessagesOrFail($messagesForInsert);
-        $this->deleteAwsQueueMessages($queueUrl, $filteredQueueMessages);
+        $this->deleteAwsQueueMessages($queueUrl, $filteredMessages);
 
-        event(new SqsMessagesWasSynced(
-            collect($filteredQueueMessages)->pluck('MessageId')->toArray()
+        event(new InboundMessagesWasSynced(
+            collect($filteredMessages)->pluck('MessageId')->toArray()
         ));
+    }
+
+    /**
+     * @param $queueMessages
+     * @return array
+     */
+    private function filterAndValidateMessages($queueMessages)
+    {
+        $validMessages = $this->filterValidMessageBodyOrFail($queueMessages);
+
+        return $this->removeDuplicateAndValidateIfDatabaseSynced($validMessages);
+    }
+
+    /**
+     * @param $queueMessages
+     * @return array
+     * @throws NoValidMessagesFromQueueException
+     */
+    private function filterValidMessageBodyOrFail($queueMessages)
+    {
+        $validMessages = [];
+
+        foreach ($queueMessages as $message) {
+            if ($this->validateMessageContent($message['Body'])) {
+                $validMessages[] = $message;
+            }
+        }
+
+        if (!$validMessages) {
+            throw new NoValidMessagesFromQueueException('No valid messages from queue to sync.');
+        }
+
+        return $validMessages;
     }
 
     /**
@@ -168,9 +202,9 @@ class InboundMessagesSyncService
      */
     private function removeDuplicateAndValidateIfDatabaseSynced(array $queueMessages)
     {
-        $filteredMessages = $this->computeDifference(collect($queueMessages)->pluck('MessageId')->toArray());
+        $messagesFromDatabase = $this->computeDifference(collect($queueMessages)->pluck('MessageId')->toArray());
 
-        $result = collect($queueMessages)->whereIn('MessageId', $filteredMessages)->toArray();
+        $result = collect($queueMessages)->whereIn('MessageId', $messagesFromDatabase)->toArray();
 
         if (empty($result)) {
             throw new DatabaseAlreadySyncedException('Database already synced.');
@@ -188,30 +222,19 @@ class InboundMessagesSyncService
     {
         $dateNow = date('Y-m-d');
 
-        $result = collect($messages)
+        return collect($messages)
             ->map(function ($message) use ($dateNow) {
-
-                $messageContent = $this->validateMessageContent($message['Body']);
-
-                if ($messageContent) {
-                    return [
-                        'message_id' => $message['MessageId'],
-                        'action_id' => $this->getActionIdFromMessageContent($message['Body']),
-                        'message_content' => $this->cleanMessageContentForInsert($message['Body']),
-                        'completed' => 'N',
-                        'create_at' => $dateNow,
-                        'updated_at' => $dateNow
-                    ];
-                }
+                return [
+                    'message_id' => $message['MessageId'],
+                    'action_id' => $this->getActionIdFromMessageContent($message['Body']),
+                    'message_content' => $this->cleanMessageContentForInsert($message['Body']),
+                    'completed' => 'N',
+                    'create_at' => $dateNow,
+                    'updated_at' => $dateNow
+                ];
             })->reject(function ($message) {
                 return empty($message);
             })->toArray();
-
-        if (empty($result)) {
-            throw new NoValidMessagesFromQueueException('No valid messages from queue to sync.');
-        }
-
-        return $result;
     }
 
     /**

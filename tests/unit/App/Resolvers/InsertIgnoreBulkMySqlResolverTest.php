@@ -1,16 +1,22 @@
 <?php
 
-use App\Message;
+use App\InboundMessage;
 use App\Resolvers\InsertIgnoreBulkMySqlResolver;
 
-class InsertIgnoreBulkMySqlResolverTest extends TestCase
+class InsertIgnoreBulkMySqlResolverTest extends BaseTestCase
 {
     use InsertIgnoreBulkMySqlResolver;
 
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_returns_query()
     {
-        $message = factory(Message::class, 2)->make();
+        $message = factory(InboundMessage::class, 2)->make();
 
         $table = 'message';
         $insertFields = ['message_id', 'action_id', 'message_content', 'completed'];

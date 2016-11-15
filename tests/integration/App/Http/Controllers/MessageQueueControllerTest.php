@@ -1,7 +1,7 @@
 <?php
 
 use App\Action;
-use App\Message;
+use App\InboundMessage;
 use App\Services\SQSClientService;
 use App\Subscriber;
 use Aws\Result;
@@ -19,6 +19,12 @@ class MessageQueueControllerTest extends BaseTestCase
         parent::setUp();
 
         $this->sqs = new SQSClientService();
+    }
+
+   /** */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
     }
 
     /**
@@ -54,7 +60,7 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertTrue(true, true);
     }
 
-    /** @test */
+   /** */
     public function it_gives_an_an_invalid_response_when_queue_does_not_exist()
     {
         $this->post('sync/nonExistingQue');
@@ -63,7 +69,7 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertResponseStatus(400);
     }
 
-    /** @test */
+   /** */
     public function it_returns_a_valid_response_when_no_messages_to_sync()
     {
         factory(Action::class, 2)->create(['name' => 'changed']);
@@ -74,7 +80,7 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertResponseOk();
     }
 
-    /** @test */
+   /** */
     public function it_returns_an_invalid_response_on_database_query_errors()
     {
         $this->setConnection('test_mysql_database');
@@ -87,7 +93,7 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertResponseStatus(500);
     }
 
-    /** @test */
+   /** */
     public function it_returns_a_valid_response_on_already_synced_database_and_sqs()
     {
         $this->SET_UP_SQS();
@@ -100,7 +106,7 @@ class MessageQueueControllerTest extends BaseTestCase
         $actionUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
         while ($availableMessage = $this->getAQueueMessage($actionUrl, 30)) {
-            factory(\App\Message::class)->create([
+            factory(InboundMessage::class)->create([
                 'message_id' => $availableMessage['MessageId'],
                 'action_id' => $action->id,
                 'message_content' => $availableMessage['Body'],
@@ -117,7 +123,7 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertEquals('Database already synced.', $this->getContent());
     }
 
-    /** @test */
+   /** */
     public function it_returns_an_invalid_response_on_database_insert_error()
     {
         $this->SET_UP_SQS();
@@ -126,7 +132,7 @@ class MessageQueueControllerTest extends BaseTestCase
 
         factory(Action::class)->create(['name' => 'changed']);
 
-        Schema::table('message', function ($table) {
+        Schema::table('inbound_message', function ($table) {
             $table->dropColumn('message_id');
         });
 
@@ -138,7 +144,7 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertResponseStatus(500);
     }
 
-    /** @test */
+   /** */
     public function it_returns_an_invalid_response_when_queue_messages_are_all_invalid()
     {
         $this->setConnection('test_mysql_database');
@@ -153,13 +159,13 @@ class MessageQueueControllerTest extends BaseTestCase
         $this->assertEquals('No valid messages from queue to sync.', $this->getContent());
     }
 
-    /** @test */
+   /** */
     public function it_returns_a_valid_response_on_successful_sync()
     {
         $this->setConnection('test_mysql_database');
 
         $action = factory(Action::class)->create(['name' => 'changed']);
-        $message = factory(Message::class)->create([
+        $message = factory(InboundMessage::class)->create([
             'action_id' => $action->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
@@ -177,19 +183,18 @@ class MessageQueueControllerTest extends BaseTestCase
 
         $this->assertResponseOk();
         $this->assertEquals('Sync Successful.', $this->getContent());
-        $this->seeInDatabase('message', ['action_id' => $action->id]);
+        $this->seeInDatabase('inbound_message', ['action_id' => $action->id]);
     }
 
     /**
      * Deletes the newly created SQS Que and its messages.
      * This test should be placed always at the bottom of each tests.
      *
-     * @test
      * @coversNothing
      */
     public function RESET_SQS()
     {
-        echo PHP_EOL . 'DELETING QUEUES CREATED FROM THIS TEST....' . PHP_EOL;
+        $this->printAlertMessageOnCLI('DELETING SAMPLE QUEUES CREATED FROM ' . get_class($this));
 
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
         $queueURLWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');

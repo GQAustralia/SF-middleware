@@ -8,12 +8,13 @@ use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Services\InboundMessagesSyncService;
-use App\Services\OutboundMessageSyncService;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Http\ResponseFactory;
 
 /**
  * Class MessageQueueController
+ * @codeCoverageIgnore
+ * 
  * @package App\Http\Controllers
  */
 class MessageQueueController extends Controller

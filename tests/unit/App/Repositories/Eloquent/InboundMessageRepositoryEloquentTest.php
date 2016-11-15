@@ -1,14 +1,14 @@
 <?php
 
 use App\Action;
-use App\Message;
-use App\Repositories\Eloquent\MessageRepositoryEloquent;
+use App\InboundMessage;
+use App\Repositories\Eloquent\InboundMessageRepositoryEloquent;
 use App\Repositories\Exceptions\DuplicateRecordsException;
 use App\Repositories\Exceptions\FailedSyncManyToMany;
 use App\Subscriber;
 use Illuminate\Database\Eloquent\Collection;
 
-class MessageRepositoryEloquentTest extends BaseTestCase
+class InboundMessageRepositoryEloquentTest extends BaseTestCase
 {
     protected $repository;
 
@@ -16,32 +16,38 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     {
         parent::setUp();
 
-        $this->repository = $this->app->make(MessageRepositoryEloquent::class);
+        $this->repository = $this->app->make(InboundMessageRepositoryEloquent::class);
+    }
+
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
     }
 
     /** @test */
     public function it_returns_message_on_instantiated_model()
     {
-        $repository = new MessageRepositoryEloquent(new Message());
+        $repository = new InboundMessageRepositoryEloquent(new InboundMessage());
 
-        $this->assertInstanceOf(Message::class, $repository->model());
+        $this->assertInstanceOf(InboundMessage::class, $repository->model());
     }
 
     /** @test */
     public function it_returns_message_on_create()
     {
         $action = factory(Action::class)->create();
-        $input = factory(Message::class)->make(['action_id' => $action->id]);
+        $input = factory(InboundMessage::class)->make(['action_id' => $action->id]);
 
         $result = $this->repository->create($input->toArray());
 
-        $this->assertInstanceOf(Message::class, $result);
+        $this->assertInstanceOf(InboundMessage::class, $result);
         $this->assertAttributesExpectedValues(
             ['message_id', 'action_id', 'message_content', 'completed'],
             $input,
             $result
         );
-        $this->seeInDatabase('message', [
+        $this->seeInDatabase('inbound_message', [
             'message_id' => $input->message_id,
             'action_id' => $input->action_id,
             'message_content' => $input->message_content,
@@ -55,8 +61,8 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     public function it_throws_an_exception_on_create_when_duplicate_message_id()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class)->create(['action_id' => $action->id]);
-        $input = factory(Message::class)->make(['action_id' => $action->id, 'message_id' => $message->message_id]);
+        $message = factory(InboundMessage::class)->create(['action_id' => $action->id]);
+        $input = factory(InboundMessage::class)->make(['action_id' => $action->id, 'message_id' => $message->message_id]);
 
         $this->setExpectedException(DuplicateRecordsException::class);
 
@@ -74,12 +80,12 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     /** @test */
     public function it_returns_a_collection_of_message()
     {
-        factory(Message::class, 5)->create();
+        factory(InboundMessage::class, 5)->create();
 
         $result = $this->repository->all();
 
         $this->assertEquals(5, count($result));
-        $this->assertInstanceOf(Message::class, $result[0]);
+        $this->assertInstanceOf(InboundMessage::class, $result[0]);
         $this->assertInstanceOf(Collection::class, $result);
     }
 
@@ -89,12 +95,12 @@ class MessageRepositoryEloquentTest extends BaseTestCase
         $initialAction = factory(Action::class)->create();
         $extraAction = factory(Action::class, 2)->create();
 
-        $message = factory(Message::class, 2)->create(['action_id' => $initialAction->id]);
+        $message = factory(InboundMessage::class, 2)->create(['action_id' => $initialAction->id]);
 
         $result = $this->repository->findAllBy('action_id', $initialAction->id);
 
         $this->assertInstanceOf(Collection::class, $result);
-        $this->assertInstanceOf(Message::class, $result[0]);
+        $this->assertInstanceOf(InboundMessage::class, $result[0]);
         $this->assertEquals(2, count($result));
     }
 
@@ -111,11 +117,11 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     public function it_returns_a_message_when_search_by_attribute()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class)->create(['action_id' => $action->id]);
 
         $result = $this->repository->findBy('message_id', $message->message_id);
 
-        $this->assertInstanceOf(Message::class, $result);
+        $this->assertInstanceOf(InboundMessage::class, $result);
         $this->assertEquals($message->message_id, $result->message_id);
     }
 
@@ -131,7 +137,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     public function it_inserts_multiple_attach_of_subscriber_on_sent_message_table()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class)->create(['action_id' => $action->id]);
         $subscribers = factory(Subscriber::class, 4)->create();
 
         $subscriberAttachInput = collect([]);
@@ -142,12 +148,12 @@ class MessageRepositoryEloquentTest extends BaseTestCase
 
         $result = $this->repository->attachSubscriber($message, $subscriberAttachInput->toArray());
 
-        $this->assertMultipleSeeInDatabase('sent_message', $subscriberAttachInput->toArray());
+        $this->assertMultipleSeeInDatabase('inbound_sent_message', $subscriberAttachInput->toArray());
 
         $this->assertEquals(4, count($result->subscriber));
         $this->assertInstanceOf(Collection::class, $result->subscriber);
         $this->assertInstanceOf(Subscriber::class, $result->subscriber[0]);
-        $this->assertInstanceOf(Message::class, $result);
+        $this->assertInstanceOf(InboundMessage::class, $result);
     }
 
     /** @test */
@@ -156,7 +162,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
         $this->setExpectedException(FailedSyncManyToMany::class, 'Subscribers does not exist.');
 
         $action = factory(Action::class)->create(['name' => 'changed']);
-        $message = factory(Message::class)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class)->create(['action_id' => $action->id]);
 
         $this->repository->attachSubscriber($message, []);
     }
@@ -171,7 +177,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
             return [$subscriber->id => ['status' => 'sent']];
         })->flatten(1)->toArray();
 
-        $this->repository->attachSubscriber(new Message(), $input);
+        $this->repository->attachSubscriber(new InboundMessage(), $input);
     }
 
     /**
@@ -184,12 +190,12 @@ class MessageRepositoryEloquentTest extends BaseTestCase
         $dateNow = date('Y-m-d');
 
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 2)->make(['action_id' => $action->id, 'created_at' => $dateNow, 'updated_at' => $dateNow]);
+        $message = factory(InboundMessage::class, 2)->make(['action_id' => $action->id, 'created_at' => $dateNow, 'updated_at' => $dateNow]);
 
         $result = $this->repository->insertIgnoreBulk($message->toArray());
 
         $this->assertEquals(2, $result);
-        $this->assertMultipleSeeInDatabase('message', $message);
+        $this->assertMultipleSeeInDatabase('inbound_message', $message);
     }
 
     /** @test */
@@ -200,10 +206,10 @@ class MessageRepositoryEloquentTest extends BaseTestCase
         $dateNow = date('Y-m-d');
 
         $action = factory(Action::class)->create();
-        $existingMessage = factory(Message::class, 2)->create(['action_id' => $action->id, 'created_at' => $dateNow, 'updated_at' => $dateNow]);
+        $existingMessage = factory(InboundMessage::class, 2)->create(['action_id' => $action->id, 'created_at' => $dateNow, 'updated_at' => $dateNow]);
 
         $result = collect($existingMessage)->map(function ($message) use ($action, $dateNow) {
-            return factory(Message::class)->make([
+            return factory(InboundMessage::class)->make([
                 'action_id' => $action->id,
                 'message_id' => $message->message_id,
                 'created_at' => $dateNow,
@@ -214,28 +220,28 @@ class MessageRepositoryEloquentTest extends BaseTestCase
         $result = $this->repository->insertIgnoreBulk($result);
 
         $this->assertEquals(0, $result);
-        $this->assertMultipleSeeInDatabase('message', $existingMessage);
+        $this->assertMultipleSeeInDatabase('inbound_message', $existingMessage);
     }
 
     /** @test */
     public function it_returns_a_collection_of_message_when_searched_using_wherein()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 5)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class, 5)->create(['action_id' => $action->id]);
 
         $messageIds = collect($message->toArray())->pluck('message_id');
 
         $result = $this->repository->findAllWhereIn('message_id', $messageIds, ['action']);
 
         $this->assertInstanceOf(Collection::class, $result);
-        $this->assertInstanceOf(Message::class, $result[0]);
+        $this->assertInstanceOf(InboundMessage::class, $result[0]);
     }
 
     /** @test */
     public function it_returns_a_list_of_subscribers_to_each_message_when_using_wherein()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 5)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class, 5)->create(['action_id' => $action->id]);
         $subscriber = factory(Subscriber::class, 5)->create();
         $subscriberIds = collect($subscriber)->pluck('id')->toArray();
 
@@ -261,7 +267,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     public function it_returns_a_collection_on_using_wherein_and_optional_where()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 5)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class, 5)->create(['action_id' => $action->id]);
         $subscriber = factory(Subscriber::class, 5)->create();
         $subscriberIds = collect($subscriber)->pluck('id')->toArray();
 
@@ -280,7 +286,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     public function it_returns_an_empty_collection_on_using_wherein_and_optional_where_when_optional_where_is_not_found()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 5)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class, 5)->create(['action_id' => $action->id]);
         $subscriber = factory(Subscriber::class, 5)->create();
         $subscriberIds = collect($subscriber)->pluck('id')->toArray();
 
@@ -297,7 +303,7 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     public function it_returns_total_number_of_failed_sent_message()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class)->create(['action_id' => $action->id]);
         $subscriber = factory(Subscriber::class)->create();
 
         $message->subscriber()->attach([$subscriber->id => ['status' => 'failed']]);
@@ -318,14 +324,14 @@ class MessageRepositoryEloquentTest extends BaseTestCase
     /** @test */
     public function it_returns_message_on_update_on_successful_update()
     {
-        $message = factory(Message::class)->create(['completed' => 'N']);
+        $message = factory(InboundMessage::class)->create(['completed' => 'N']);
 
         $updateInput = ['completed' => 'Y'];
 
         $result = $this->repository->update($updateInput, $message->message_id);
 
-        $this->assertInstanceOf(Message::class, $result);
-        $this->seeInDatabase('message', [
+        $this->assertInstanceOf(InboundMessage::class, $result);
+        $this->seeInDatabase('inbound_message', [
             'message_id' => $message->message_id,
             'completed' => 'Y'
         ]);

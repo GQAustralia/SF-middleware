@@ -4,9 +4,9 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Message extends Model
+class InboundMessage extends Model
 {
-    protected $table = 'message';
+    protected $table = 'inbound_message';
 
     /**
      * The attributes that are mass assignable.
@@ -16,13 +16,12 @@ class Message extends Model
     protected $fillable = ['message_id', 'action_id', 'message_content', 'completed'];
 
     /**
-     * Get the associated actions to Message.
+     * Get the associated actions to Inbound Message.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function action()
     {
-
         return $this->belongsTo(Action::class);
     }
 
@@ -33,6 +32,6 @@ class Message extends Model
      */
     public function subscriber()
     {
-        return $this->belongsToMany(Subscriber::class, 'sent_message')->withPivot('id', 'status')->withTimestamps();
+        return $this->belongsToMany(Subscriber::class, 'inbound_sent_message')->withPivot('id', 'status')->withTimestamps();
     }
 }

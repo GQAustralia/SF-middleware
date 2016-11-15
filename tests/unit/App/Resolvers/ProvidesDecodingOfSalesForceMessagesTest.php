@@ -7,6 +7,12 @@ class ProvidesDecodingOfSalesForceMessagesTest extends BaseTestCase
     use ProvidesDecodingOfSalesForceMessages;
 
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_unserialize_message()
     {
         $expectedOutput = [

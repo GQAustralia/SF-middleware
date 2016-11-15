@@ -99,4 +99,30 @@ class BaseTestCase extends TestCase
     {
         return $test = trim(Artisan::output());
     }
+
+    /**
+     * Used only to print status on which file does the testing happens.
+     *
+     * @param string $message
+     */
+    protected function runningTestFor($message)
+    {
+        print PHP_EOL;
+
+        echo "\033[32m RUNNING TEST FOR ---> \033[36m $message \033[0m \n";
+
+        print PHP_EOL;
+    }
+
+    /**
+     * @param string $message
+     */
+    protected function printAlertMessageOnCLI($message)
+    {
+        print PHP_EOL;
+
+        echo "\033[31m $message \033[0m \n";
+
+        print PHP_EOL;
+    }
 }

@@ -2,18 +2,18 @@
 
 namespace App\Listeners;
 
-use App\Events\SqsMessagesWasSynced;
+use App\Events\InboundMessagesWasSynced;
 use App\Http\Controllers\StatusCodes;
-use App\Message;
-use App\Repositories\Contracts\MessageLogRepositoryInterface;
-use App\Repositories\Contracts\MessageRepositoryInterface;
-use App\Resolvers\MessageStatusResolver;
+use App\InboundMessage;
+use App\Repositories\Contracts\InboundMessageRepositoryInterface;
+use App\Repositories\Contracts\InboundMessageLogRepositoryInterface;
+use App\Resolvers\InboundMessageStatusResolver;
 use App\Resolvers\ProvidesDecodingOfSalesForceMessages;
 use App\Subscriber;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ProcessSyncedMessages implements ShouldQueue, StatusCodes
+class ProcessSyncedInboundMessages implements ShouldQueue, StatusCodes
 {
     use ProvidesDecodingOfSalesForceMessages;
 
@@ -23,7 +23,7 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     const AUTH_TOKEN = '5vZmU6HGAsmN8Qfc-YDoDwhH454950';
 
     /**
-     * @var MessageRepositoryInterface
+     * @var InboundMessageRepositoryInterface
      */
     protected $message;
 
@@ -33,27 +33,27 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     protected $guzzleClient;
 
     /**
-     * @var MessageLogRepositoryInterface
+     * @var InboundMessageLogRepositoryInterface
      */
     protected $messageLog;
 
     /**
-     * @var MessageStatusResolver
+     * @var InboundMessageStatusResolver
      */
     protected $messageStatusResolver;
 
     /**
      * SqsMessagesWasSyncedEventListener constructor.
-     * @param MessageRepositoryInterface $message
+     * @param InboundMessageRepositoryInterface $message
      * @param GuzzleClient $guzzleClient
-     * @param MessageLogRepositoryInterface $messageLog
-     * @param MessageStatusResolver $messageStatusResolver
+     * @param InboundMessageLogRepositoryInterface $messageLog
+     * @param InboundMessageStatusResolver $messageStatusResolver
      */
     public function __construct(
-        MessageRepositoryInterface $message,
+        InboundMessageRepositoryInterface $message,
         GuzzleClient $guzzleClient,
-        MessageLogRepositoryInterface $messageLog,
-        MessageStatusResolver $messageStatusResolver
+        InboundMessageLogRepositoryInterface $messageLog,
+        InboundMessageStatusResolver $messageStatusResolver
     ) {
         $this->message = $message;
         $this->guzzleClient = $guzzleClient;
@@ -62,9 +62,9 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param SqsMessagesWasSynced $event
+     * @param InboundMessagesWasSynced $event
      */
-    public function handle(SqsMessagesWasSynced $event)
+    public function handle(InboundMessagesWasSynced $event)
     {
         $messagesForResolve = [];
 
@@ -81,18 +81,18 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param Message $message
+     * @param InboundMessage $message
      * @return integer
      */
-    private function hasSubscribers(Message $message)
+    private function hasSubscribers(InboundMessage $message)
     {
         return $message->action->subscriber->count();
     }
 
     /**
-     * @param Message $message
+     * @param InboundMessage $message
      */
-    private function handleMessageSubscribers(Message $message)
+    private function handleMessageSubscribers(InboundMessage $message)
     {
         $subscriberMessageLogs = collect([]);
 
@@ -101,7 +101,11 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
             $isValidUrl = $this->guardIsValidUrl($subscriber->url);
 
             if ($isValidUrl) {
-                $response = $this->sendMessageToSubscriber($subscriber->url, $message->message_content);
+                $response = $this->sendMessageToSubscriber(
+                    $subscriber->url,
+                    $this->buildHttpPostParameters($message->message_content)
+                );
+
                 $sentMessage = $this->insertSentMessage($message, $subscriber->id, $response->getStatusCode());
 
                 $messageLogPayload = $this->buildMessageLogPayload(
@@ -138,22 +142,29 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param string $url
-     * @param string $message
-     * @return \Psr\Http\Message\ResponseInterface
+     * @param array $message
+     * @return array
      */
-    private function sendMessageToSubscriber($url, $message)
+    private function buildHttpPostParameters($message)
     {
         $salesForceParameters = array_merge(
             $this->deCodeSalesForceMessage($this->cleanMessageContentForSending($message)),
             ['authToken' => self::AUTH_TOKEN]
         );
 
-        $formParams = array_merge(
+        return array_merge(
             ['http_errors' => false],
             ['form_params' => $salesForceParameters]
         );
+    }
 
+    /**
+     * @param string $url
+     * @param array $formParams
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    private function sendMessageToSubscriber($url, $formParams)
+    {
         return $this->guzzleClient->post($url, $formParams);
     }
 
@@ -167,12 +178,12 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param Message $message
+     * @param InboundMessage $message
      * @param integer $subscriberId
      * @param integer $statusCode
      * @return Subscriber[belongsToMany]
      */
-    private function insertSentMessage(Message $message, $subscriberId, $statusCode)
+    private function insertSentMessage(InboundMessage $message, $subscriberId, $statusCode)
     {
         $result = $this->message->attachSubscriber(
             $message,
@@ -196,17 +207,17 @@ class ProcessSyncedMessages implements ShouldQueue, StatusCodes
     }
 
     /**
-     * @param integer $sentMessageId
+     * @param integer $inboundSentMessageId
      * @param integer $responseCode
      * @param string $responseBody
      * @return array
      */
-    private function buildMessageLogPayload($sentMessageId, $responseCode, $responseBody)
+    private function buildMessageLogPayload($inboundSentMessageId, $responseCode, $responseBody)
     {
         $dateNow = date('Y-m-d');
 
         return [
-            'sent_message_id' => $sentMessageId,
+            'inbound_sent_message_id' => $inboundSentMessageId,
             'response_code' => $responseCode,
             'response_body' => $responseBody,
             'created_at' => $dateNow,

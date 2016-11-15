@@ -2,9 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
-class CreateSentMessageTable extends Migration
+class CreateTableActionSubscriber extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +12,10 @@ class CreateSentMessageTable extends Migration
      */
     public function up()
     {
-        Schema::create('sent_message', function (Blueprint $table) {
+        Schema::create('action_subscriber', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('message_id');
+            $table->integer('action_id');
             $table->integer('subscriber_id');
-            $table->string('status');
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
         });
@@ -30,6 +28,6 @@ class CreateSentMessageTable extends Migration
      */
     public function down()
     {
-        Schema::drop('sent_message');
+        Schema::drop('action_subscriber');
     }
 }
