@@ -11,6 +11,7 @@ class ExampleResponseController extends Controller
 
     /**
      * MessageQueueController constructor.
+     *
      * @param ResponseFactory $responseFactory
      */
     public function __construct(ResponseFactory $responseFactory)
@@ -35,9 +36,11 @@ class ExampleResponseController extends Controller
     }
 
     /**
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function form_params(Request $request)
+    public function formParams(Request $request)
     {
         $input = implode(',', $request->all());
 

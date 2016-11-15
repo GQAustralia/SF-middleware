@@ -13,8 +13,9 @@ use Laravel\Lumen\Http\ResponseFactory;
 
 /**
  * Class MessageQueueController
+ *
  * @codeCoverageIgnore
- * 
+ *
  * @package App\Http\Controllers
  */
 class MessageQueueController extends Controller
@@ -34,7 +35,8 @@ class MessageQueueController extends Controller
 
     /**
      * MessageQueueController constructor.
-     * @param ResponseFactory $responseFactory
+     *
+     * @param ResponseFactory            $responseFactory
      * @param InboundMessagesSyncService $inbound
      */
     public function __construct(ResponseFactory $responseFactory, InboundMessagesSyncService $inbound)
