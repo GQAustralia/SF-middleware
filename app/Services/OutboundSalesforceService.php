@@ -6,8 +6,9 @@
  */
 namespace App\Services;
 
-use App\Repositories\Contracts\SalesForceLogInterface;
-use App\SalesForceLog;
+use App\OutboundMessage;
+use App\OutboundMessageLog;
+use App\Repositories\Contracts\OutboundMessageLogInterface;
 use Exception;
 use MarkWilson\XmlToJson;
 use Salesforce;
@@ -19,18 +20,39 @@ use Salesforce;
  */
 class OutboundSalesforceService
 {
+    const OPERATION_INSERT = 'insert';
+    const OPERATION_UPDATE = 'update';
+
+    protected $logId;
+
     /**
-     * @var SalesForceLogInterface
+     * @var OutboundMessageLogInterface
      */
-    private $salesForceLog;
+    protected $outboundMessageLog;
 
     /**
      * OutboundSalesforceService constructor.
-     * @param SalesForceLogInterface $salesForceLog
+     * @param OutboundMessageLogInterface $outboundMessageLog
      */
-    public function __construct(SalesForceLogInterface $salesForceLog)
+    public function __construct(OutboundMessageLogInterface $outboundMessageLog)
     {
-        $this->salesForceLog = $salesForceLog;
+        $this->outboundMessageLog = $outboundMessageLog;
+    }
+
+    /**
+     * @param int $logId
+     *
+     * @deprecated
+     * @codeCoverageIgnore
+     *
+     * Should be refactored in the future as is storing of 'database' outboundId is of no concern of the SalesForceService
+     * @return $this
+     */
+    public function setLogId($logId)
+    {
+        $this->logId = $logId;
+
+        return $this;
     }
 
     /**
@@ -317,9 +339,7 @@ class OutboundSalesforceService
             $createResponse = Salesforce::create(array($salesForceObject), $objectName);
             $returnResponse = $createResponse[0];
 
-            $this->salesForceLog->create(
-                $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$returnResponse])
-            );
+            $this->logOutboundMessage($this->logId, self::OPERATION_INSERT, [$salesForceObject], [$returnResponse]);
 
             echo '<pre>';
             var_dump($returnResponse);
@@ -330,7 +350,7 @@ class OutboundSalesforceService
 
             return $returnResponse->success;
         } catch (Exception $ex) {
-            $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$ex->getMessage()]);
+            $this->logOutboundMessage($this->logId, self::OPERATION_INSERT, [$salesForceObject], [$ex->getMessage()]);
             return false;
         }
     }
@@ -346,9 +366,7 @@ class OutboundSalesforceService
             $updateResponse = Salesforce::update(array($salesForceObject), $objectName);
             $returnResponse = $updateResponse[0];
 
-            $this->salesForceLog->create(
-                $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$returnResponse])
-            );
+            $this->logOutboundMessage($this->logId, self::OPERATION_UPDATE, [$salesForceObject], [$returnResponse]);
 
             echo '<pre>';
             var_dump($returnResponse);
@@ -359,7 +377,7 @@ class OutboundSalesforceService
 
             return $returnResponse->success;
         } catch (Exception $ex) {
-            $this->buildSalesForceLogFactory($objectName, [$salesForceObject], [$ex->getMessage()]);
+            $this->logOutboundMessage($this->logId, self::OPERATION_UPDATE, [$salesForceObject], [$ex->getMessage()]);
             return false;
         }
     }
@@ -369,7 +387,6 @@ class OutboundSalesforceService
      * @param $cond
      * @param string $select
      *
-     * @codeCoverageIgnore
      */
     private function processFetch($objectName, $cond, $select = 'all')
     {
@@ -398,9 +415,6 @@ class OutboundSalesforceService
         }
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     private function processDelete()
     {
         //
@@ -520,17 +534,21 @@ class OutboundSalesforceService
     }
 
     /**
-     * @param string $objectName
-     * @param array $message
-     * @param array $response
-     * @return mixed
+     * @param int $logId
+     * @param string $operation
+     * @param array $requestObject
+     * @param array $objectName
+     * @return OutboundMessageLog
      */
-    private function buildSalesForceLogFactory($objectName, array $message, array $response = [])
+    public function logOutboundMessage($logId, $operation, $requestObject, $objectName)
     {
-        return factory(SalesForceLog::class)->make([
-            'object_name' => $objectName,
-            'message' => json_encode($message),
-            'response_body' => json_encode($response),
+        $input = factory(OutboundMessageLog::class)->make([
+            'outbound_message_id' => $logId,
+            'operation' => $operation,
+            'request_object' => json_encode($requestObject),
+            'object_name' => json_encode($objectName)
         ])->toArray();
+
+        return $this->outboundMessageLog->create($input);
     }
 }

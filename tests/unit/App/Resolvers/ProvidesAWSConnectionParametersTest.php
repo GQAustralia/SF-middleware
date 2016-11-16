@@ -3,9 +3,15 @@
 use App\Resolvers\ProvidesAWSConnectionParameters;
 use Illuminate\Support\Facades\Config;
 
-class ProvidesAWSConnectionParametersTest extends TestCase
+class ProvidesAWSConnectionParametersTest extends BaseTestCase
 {
     use ProvidesAWSConnectionParameters;
+
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
 
     /** @test */
     public function it_returns_secret_key_matched_to_config_secret_key()

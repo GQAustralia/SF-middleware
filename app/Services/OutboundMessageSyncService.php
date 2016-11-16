@@ -3,6 +3,8 @@ namespace App\Services;
 
 use App\Exceptions\AWSSQSServerException;
 use App\Exceptions\NoMessagesToSyncException;
+use App\OutboundMessage;
+use App\Repositories\Contracts\OutboundMessageInterface;
 use Aws\Sqs\Exception\SqsException;
 use Aws\Sqs\SqsClient;
 
@@ -32,14 +34,24 @@ class OutboundMessageSyncService
     protected $outboundSalesforceService;
 
     /**
+     * @var OutboundMessageInterface
+     */
+    protected $outboundMessage;
+
+    /**
      * OutboundService constructor.
      * @param SQSClientService $sqs
      * @param OutboundSalesforceService $outboundSalesforceService
+     * @param OutboundMessageInterface $outboundMessage
      */
-    public function __construct(SQSClientService $sqs, OutboundSalesforceService $outboundSalesforceService)
-    {
+    public function __construct(
+        SQSClientService $sqs,
+        OutboundSalesforceService $outboundSalesforceService,
+        OutboundMessageInterface $outboundMessage
+    ) {
         $this->sqs = $sqs;
         $this->outboundSalesforceService = $outboundSalesforceService;
+        $this->outboundMessage = $outboundMessage;
     }
 
     /**
@@ -63,16 +75,17 @@ class OutboundMessageSyncService
                     }
                 }
 
-                $result = $this->outboundSalesforceService->sendToSalesforce($body, $attributes);
+                $outbound = $this->insertOutboundMessage($message);
+
+                $result = $this->outboundSalesforceService
+                    ->setLogId($outbound->id)
+                    ->sendToSalesforce($body, $attributes);
 
                 if ($result) {
-                    /*  $mid = $message['MessageId'];
-                      $reciptHandles = $message['ReceiptHandle'];
-                      $result = $this->sqs->client()->deleteMessage([
-                          'QueueUrl' => $this->queueURI,
-                          'ReceiptHandle' => $reciptHandles,
-                      ]);*/
+                    $this->setOutboundStatusToSent($outbound->id);
                 }
+
+                $this->deleteOutboundSQSMessage($queueUrl, $message['ReceiptHandle']);
             }
             $this->handle($queueName);
         }
@@ -125,5 +138,39 @@ class OutboundMessageSyncService
         $message = explode('</Message>', $message[1]);
 
         return reset($message);
+    }
+
+    /**
+     * @param array $payload
+     * @return OutboundMessage
+     */
+    private function insertOutboundMessage($payload)
+    {
+        return $this->outboundMessage->create([
+            'message_id' => $payload['MessageId'],
+            'message_body' => json_encode($payload['Body']),
+            'message_attributes' => json_encode($payload['MessageAttributes']),
+            'status' => 'failed'
+        ]);
+    }
+
+    /**
+     * @param int $outboundId
+     * @return mixed
+     */
+    private function setOutboundStatusToSent($outboundId)
+    {
+        return $this->outboundMessage->update(['status' => 'sent'], $outboundId);
+    }
+
+    /**
+     * @param string $queueUrl
+     * @param string $receiptHandle
+     *
+     * @return \Aws\Result
+     */
+    private function deleteOutboundSQSMessage($queueUrl, $receiptHandle)
+    {
+        return $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle,]);
     }
 }

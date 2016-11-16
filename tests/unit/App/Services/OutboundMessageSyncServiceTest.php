@@ -20,6 +20,12 @@ class OutboundMessageSyncServiceTest extends BaseTestCase
     }
 
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_throws_an_exception_when_queue_does_not_exist()
     {
         $this->setExpectedException(AWSSQSServerException::class);

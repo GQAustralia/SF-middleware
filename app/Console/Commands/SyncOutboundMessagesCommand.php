@@ -3,9 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Exceptions\AWSSQSServerException;
-use App\Exceptions\NoMessagesToSyncException;
-use Illuminate\Console\Command;
 use App\Services\OutboundMessageSyncService;
+use Illuminate\Console\Command;
 use Laravel\Lumen\Routing\ProvidesConvenienceMethods;
 
 class SyncOutboundMessagesCommand extends Command
@@ -27,10 +26,11 @@ class SyncOutboundMessagesCommand extends Command
      * @var string
      */
     protected $description = 'Sync Outbound AWS Messages';
+
     /**
      * @var OutboundMessageSyncService
      */
-    private $outbound;
+    protected $outbound;
 
     /**
      * OutboundSync constructor.

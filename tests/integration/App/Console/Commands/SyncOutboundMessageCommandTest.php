@@ -16,6 +16,11 @@ class SyncOutboundMessageCommandTest extends BaseTestCase
         $this->sqs = new SQSClientService();
     }
 
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
     /**
      * Setup a SQS que and messages inside it.
      *
