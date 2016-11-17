@@ -13,7 +13,8 @@
         "davispeixoto/laravel5-salesforce": "~2.0",
         "markwilson/xml-to-json": "^0.1.4",
         "michaelb/lumen-make": "^1.0",
-        "laravelista/lumen-vendor-publish": "^2.0"
+        "laravelista/lumen-vendor-publish": "^2.0",
+        "jem-get-qualified/kodosunifa": "dev-master"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
@@ -36,6 +37,12 @@
     "scripts": {
         "post-root-package-install": [
             "php -r \"copy('.env.example', '.env');\""
+        ],
+        "post-install-cmd":[
+            "php vendor/jem-get-qualified/kodosunifa/script/install-hooks.php"
+        ],
+        "post-update-cmd":[
+            "php vendor/jem-get-qualified/kodosunifa/script/install-hooks.php"
         ]
     },
     "minimum-stability": "dev",
