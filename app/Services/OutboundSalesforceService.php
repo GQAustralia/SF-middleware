@@ -121,9 +121,15 @@ class OutboundSalesforceService
             }
         }
 
+        if (isset($mappedData['childRelation']) && $objId) {
+            if (!empty($objId[$mappedData['childRelation']])) {
+                $mappedData['fields']["Id"] = $objId[$mappedData['childRelation']];
+            }
+        }
+
         switch ($operation) {
             case 'update':
-                $objectId = $this->processUpdate($objectName, (object)$mappedData['fields']);
+                $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
                 break;
             case 'updateornew':
                 if (empty($mappedData['fields']['Id']) || $mappedData['fields']['Id'] == false) {
@@ -133,9 +139,9 @@ class OutboundSalesforceService
                             $mappedData['fields'][$key] = $val;
                         }
                     }
-                    $objectId = $this->processInsert($objectName, (object)$mappedData['fields']);
+                    $objectId = $this->processInsert($objectName, (object) $mappedData['fields']);
                 } else {
-                    $objectId = $this->processUpdate($objectName, (object)$mappedData['fields']);
+                    $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
                 }
                 //var_dump($objectId);
                 //var_dump($mappedData['fields']);
@@ -145,6 +151,17 @@ class OutboundSalesforceService
         if (!empty($message['childs']) && $objectId) {
             foreach ($message['childs'] as $child) {
                 $this->sendMessageToSalesforce($operation, $child, $objectId);
+            }
+        }
+
+        if (!empty($message['parents']) && $objectId && !empty($message['parentfields'])) {
+            
+            $foreignKeysArray = $this->processFetch($objectName, ["Id" => $objectId], $message['parentfields']);
+            if ($foreignKeysArray !== false) {
+                $foreignKeys = $foreignKeysArray[0];
+                foreach ($message['parents'] as $parent) {
+                    $this->sendMessageToSalesforce($operation, $parent, (array)$foreignKeys);
+                }
             }
         }
 
@@ -388,9 +405,26 @@ class OutboundSalesforceService
      * @param string $select
      *
      */
-    private function processFetch($objectName, $cond, $select = 'all')
+    private function processFetch($objectName, $condition, $select = 'Id')
     {
-        //
+        if (is_array($condition)) {
+            $condition = $this->createConditionString($condition);
+        }
+
+        if (is_array($select)) {
+            $select = implode(",", $select);
+        }
+        
+        try {
+            $query = 'SELECT ' . $select . ' from ' . $objectName . ' WHERE ' . $condition;
+            $response = Salesforce::query(($query));
+            if (count($response->records) > 0) {
+                return $response->records;
+            }
+            return false;
+        } catch (Exception $ex) {
+            return false;
+        }
     }
 
     /**
