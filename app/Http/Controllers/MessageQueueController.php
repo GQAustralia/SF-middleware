@@ -10,6 +10,9 @@ use App\Exceptions\NoValidMessagesFromQueueException;
 use App\Services\InboundMessagesSyncService;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Http\ResponseFactory;
+use App\Services\OutboundSalesforceService;
+use App\OutboundMessage;
+use App\Repositories\Contracts\OutboundMessageInterface;
 
 /**
  * Class MessageQueueController
@@ -34,15 +37,33 @@ class MessageQueueController extends Controller
     protected $inbound;
 
     /**
+     * @var OutboundSalesforceService
+     */
+    protected $outboundSalesforceService;
+
+    /**
+     * @var OutboundMessageInterface
+     */
+    protected $outboundMessage;
+
+    /**
      * MessageQueueController constructor.
      *
      * @param ResponseFactory            $responseFactory
      * @param InboundMessagesSyncService $inbound
+     * @param OutboundSalesforceService $outboundSalesforceService
+     * @param OutboundMessageInterface $outboundMessage
      */
-    public function __construct(ResponseFactory $responseFactory, InboundMessagesSyncService $inbound)
-    {
+    public function __construct(
+        ResponseFactory $responseFactory,
+        InboundMessagesSyncService $inbound, 
+        OutboundSalesforceService $outboundSalesforceService, 
+        OutboundMessageInterface $outboundMessage
+    ) {
         $this->responseFactory = $responseFactory;
         $this->inbound = $inbound;
+        $this->outboundSalesforceService = $outboundSalesforceService;
+        $this->outboundMessage = $outboundMessage;
     }
 
     /**
@@ -85,6 +106,12 @@ class MessageQueueController extends Controller
      */
     public function testZoho()
     {
+        $body = '{"object":"OpportunityLineItem","fields":{"Id":"00kp0000003by1xAAA"},"parents":[{"object":"Opportunity","fields":{"Target_RTO__c":{"object":"Account","relations":{"or":[{"Zoho_RTO_Id__c":"696292000010931874"},{"Zoho_RTO_Id__c":"zcrm_696292000010931874"},{"Id":"696292000010931874"}]}}},"childRelation":"OpportunityId"}],"parentfields":["OpportunityId"]}';
+        $body = '{"object":"OpportunityLineItem","fields":{"Id":"00kp0000003by1xAAA","UnitPrice":"1500"},"parents":[{"object":"Opportunity","fields":{"Qualification_Name__c":"Diploma of Business Administration (Release 1)","Qualification_Demanded_Code__c":"BSB50415"},"childRelation":"OpportunityId"},{"object":"PricebookEntry","fields":{"Cost_Price__c":"400"},"childRelation":"PricebookEntryId"}],"parentfields":["OpportunityId","PricebookEntryId"]}';
+        $attributes = ['operation'=>'update'];
+        $result = $this->outboundSalesforceService
+                    ->setLogId(1)
+                    ->sendToSalesforce($body, $attributes);
         //****You need to use constructor dependency injection to execute this ****
 
         //$outboundService = new OutboundMessageSyncService();
