@@ -146,10 +146,11 @@ class OutboundMessageSyncService
      */
     private function insertOutboundMessage($payload)
     {
+        $messageAttributes = empty($payload['MessageAttributes']) ? [] : $payload['MessageAttributes'];
         return $this->outboundMessage->create([
             'message_id' => $payload['MessageId'],
             'message_body' => json_encode($payload['Body']),
-            'message_attributes' => json_encode($payload['MessageAttributes']),
+            'message_attributes' => json_encode($messageAttributes),
             'status' => 'failed'
         ]);
     }
