@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 Salesforce.com Enterprise Web Services API Version 38.0
-Generated on 2016-11-18 06:21:22 +0000.
+Generated on 2016-11-21 03:02:50 +0000.
 
 Package Versions:
 ContactWorld for Salesforce (Version: 16.111, Namespace: nvmcontactworld)
@@ -6986,6 +6986,7 @@ All Rights Reserved
                         <element name="Product2Id" nillable="true" minOccurs="0" type="tns:ID"/>
                         <element name="ProductCode" nillable="true" minOccurs="0" type="xsd:string"/>
                         <element name="Quantity" nillable="true" minOccurs="0" type="xsd:double"/>
+                        <element name="RTO_List_Price__c" nillable="true" minOccurs="0" type="xsd:double"/>
                         <element name="ServiceDate" nillable="true" minOccurs="0" type="xsd:date"/>
                         <element name="SortOrder" nillable="true" minOccurs="0" type="xsd:int"/>
                         <element name="SystemModstamp" nillable="true" minOccurs="0" type="xsd:dateTime"/>
@@ -8375,6 +8376,7 @@ All Rights Reserved
                         <element name="Emails" nillable="true" minOccurs="0" type="tns:QueryResult"/>
                         <element name="Enrollments__r" nillable="true" minOccurs="0" type="tns:QueryResult"/>
                         <element name="Events" nillable="true" minOccurs="0" type="tns:QueryResult"/>
+                        <element name="Faculty__c" nillable="true" minOccurs="0" type="xsd:string"/>
                         <element name="Family" nillable="true" minOccurs="0" type="xsd:string"/>
                         <element name="FeedSubscriptionsForEntity" nillable="true" minOccurs="0" type="tns:QueryResult"/>
                         <element name="Feeds" nillable="true" minOccurs="0" type="tns:QueryResult"/>
