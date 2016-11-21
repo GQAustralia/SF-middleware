@@ -19,7 +19,7 @@
         "fzaninotto/faker": "~1.4",
         "phpunit/phpunit": "~4.0",
         "mockery/mockery": "~0.9",
-        "squizlabs/php_codesniffer": "2.*"
+        "gqaustralia/kodosunifa": "dev-master"
     },
     "autoload": {
         "psr-4": {
@@ -36,6 +36,12 @@
     "scripts": {
         "post-root-package-install": [
             "php -r \"copy('.env.example', '.env');\""
+        ],
+        "post-install-cmd":[
+            "php vendor/gqaustralia/kodosunifa/script/install-hooks.php"
+        ],
+        "post-update-cmd":[
+            "php vendor/gqaustralia/kodosunifa/script/install-hooks.php"
         ]
     },
     "minimum-stability": "dev",
