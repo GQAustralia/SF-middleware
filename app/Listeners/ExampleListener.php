@@ -15,7 +15,7 @@ class ExampleListener
      */
     public function __construct()
     {
-
+        //
     }
 
     /**

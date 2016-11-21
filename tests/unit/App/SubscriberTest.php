@@ -52,8 +52,8 @@ class SubscriberTest extends BaseTestCase
         $subscriber = factory(Subscriber::class)->create();
         $inboundMessage = factory(InboundMessage::class)->create();
 
-        $subscriber->inbound_message()->attach([$inboundMessage->id => ['status' => 'sent']]);
+        $subscriber->inboundMessage()->attach([$inboundMessage->id => ['status' => 'sent']]);
 
-        $this->assertInstanceOf(InboundMessage::class, $subscriber->inbound_message[0]);
+        $this->assertInstanceOf(InboundMessage::class, $subscriber->inboundMessage[0]);
     }
 }

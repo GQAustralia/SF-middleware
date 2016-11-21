@@ -21,6 +21,7 @@ abstract class RepositoryEloquent implements RepositoryInterface
 
     /**
      * RepositoryEloquent constructor.
+     *
      * @codeCoverageIgnore
      * @param App $app
      */
@@ -36,7 +37,7 @@ abstract class RepositoryEloquent implements RepositoryInterface
      *
      * @return mixed
      */
-    abstract function model();
+    abstract public function model();
 
     /**
      * @param array $dataPayload
@@ -56,7 +57,7 @@ abstract class RepositoryEloquent implements RepositoryInterface
     }
 
     /**
-     * @param string $attribute
+     * @param string     $attribute
      * @param int|string $value
      * @return Model
      */
@@ -66,7 +67,7 @@ abstract class RepositoryEloquent implements RepositoryInterface
     }
 
     /**
-     * @param string $attribute
+     * @param string     $attribute
      * @param int|string $value
      * @return Collection
      */

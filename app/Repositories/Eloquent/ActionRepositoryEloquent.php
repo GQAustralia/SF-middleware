@@ -15,6 +15,7 @@ class ActionRepositoryEloquent extends RepositoryEloquent implements ActionRepos
 
     /**
      * ActionRepositoryEloquent constructor.
+     *
      * @param Action $action
      */
     public function __construct(Action $action)
@@ -33,8 +34,8 @@ class ActionRepositoryEloquent extends RepositoryEloquent implements ActionRepos
     /**
      * Associate Subscriber to Action.
      *
-     * @param int $actionId
-     * @param int $subscriberId
+     * @param  int $actionId
+     * @param  int $subscriberId
      * @return Subscriber
      */
     public function attachSubscriber($actionId, $subscriberId)

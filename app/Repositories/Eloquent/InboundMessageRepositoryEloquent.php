@@ -32,7 +32,7 @@ class InboundMessageRepositoryEloquent extends RepositoryEloquent implements Inb
      *
      * @return mixed
      */
-    function model()
+    public function model()
     {
         return $this->message;
     }

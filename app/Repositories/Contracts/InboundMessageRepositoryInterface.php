@@ -8,7 +8,7 @@ interface InboundMessageRepositoryInterface extends RepositoryInterface
 {
     /**
      * @param InboundMessage $message
-     * @param array $input
+     * @param array          $input
      * @return mixed
      */
     public function attachSubscriber(InboundMessage $message, array $input);
@@ -21,8 +21,8 @@ interface InboundMessageRepositoryInterface extends RepositoryInterface
 
     /**
      * @param string $attribute
-     * @param array $value
-     * @param array $with
+     * @param array  $value
+     * @param array  $with
      * @return mixed
      */
     public function findAllWhereIn($attribute, $value, $with = []);
@@ -34,7 +34,7 @@ interface InboundMessageRepositoryInterface extends RepositoryInterface
     public function getTotalFailSentMessage($messageId);
 
     /**
-     * @param array $input
+     * @param array  $input
      * @param string $messageId
      * @return mixed
      */

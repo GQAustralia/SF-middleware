@@ -14,6 +14,7 @@ class OutboundMessageLogRepositoryEloquent extends RepositoryEloquent implements
 
     /**
      * OutboundMessageLogRepositoryEloquent constructor.
+     *
      * @param OutboundMessageLog $outboundMessageLog
      */
     public function __construct(OutboundMessageLog $outboundMessageLog)

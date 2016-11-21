@@ -154,7 +154,6 @@ class OutboundSalesforceService
         }
 
         if (!empty($message['parents']) && $objectId && !empty($message['parentfields'])) {
-
             $foreignKeysArray = $this->processFetch($objectName, ["Id" => $objectId], $message['parentfields']);
             if ($foreignKeysArray !== false) {
                 $foreignKeys = $foreignKeysArray[0];
@@ -268,8 +267,8 @@ class OutboundSalesforceService
             $relations = $map['relations'];
             $salesForceObject = new \stdClass();
             foreach ($defaults as $val => $default) {
-                $salesForceObject->$default = (array_search($default, $data) !== false) ? $data[array_search($default,
-                    $data)] : $val;
+                $salesForceObject->$default =
+                    (array_search($default, $data) !== false) ? $data[array_search($default, $data)] : $val;
             }
             foreach ($parents as $parent) {
                 $parentResponse = $this->processParentFetch($parent, $data);
@@ -325,10 +324,10 @@ class OutboundSalesforceService
             }
         }
         switch ($curd) {
-            case 'fetch' :
+            case 'fetch':
                 return $this->processFetch($objectName, $cond, $select = 'all');
                 break;
-            case 'updnew' :
+            case 'updnew':
                 if ((!isset($salesForceObject->Id)) || $salesForceObject->Id == false) {
                     if (isset($salesForceObject->Id)) {
                         unset($salesForceObject->Id);
@@ -338,7 +337,7 @@ class OutboundSalesforceService
                     return $this->processUpdate($objectName, $salesForceObject);
                 }
                 break;
-            case 'upd' :
+            case 'upd':
                 return $this->processUpdate($objectName, $salesForceObject);
                 break;
         }

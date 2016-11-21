@@ -14,6 +14,7 @@ class SubscriberRepositoryEloquent extends RepositoryEloquent implements Subscri
 
     /**
      * SubscriberRepositoryEloquent constructor.
+     *
      * @param Subscriber $subscriber
      */
     public function __construct(Subscriber $subscriber)
