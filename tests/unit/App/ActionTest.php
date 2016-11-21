@@ -19,7 +19,7 @@ class ActionTest extends BaseTestCase
 
         $model->shouldReceive('hasMany')->with(InboundMessage::class)->andReturn(true);
 
-        $this->assertTrue($model->inbound_message());
+        $this->assertTrue($model->inboundMessage());
     }
 
     /** @test */
@@ -28,8 +28,8 @@ class ActionTest extends BaseTestCase
         $action = factory(Action::class)->create();
         $message = factory(InboundMessage::class, 3)->create(['action_id' => $action->id]);
 
-        $this->assertInstanceOf(InboundMessage::class, $action->inbound_message[0]);
-        $this->assertEquals(3, count($action->inbound_message));
+        $this->assertInstanceOf(InboundMessage::class, $action->inboundMessage[0]);
+        $this->assertEquals(3, count($action->inboundMessage));
     }
 
     /** @test */

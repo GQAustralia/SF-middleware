@@ -16,14 +16,14 @@ interface RepositoryInterface
     public function all();
 
     /**
-     * @param string $attribute
+     * @param string         $attribute
      * @param string|integer $value
      * @return mixed
      */
     public function findBy($attribute, $value);
 
     /**
-     * @param string $attribute
+     * @param string         $attribute
      * @param string|integer $value
      * @return mixed
      */

@@ -30,7 +30,7 @@ class Subscriber extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function inbound_message()
+    public function inboundMessage()
     {
         return $this->belongsToMany(InboundMessage::class, 'inbound_sent_message')->withPivot('status')->withTimestamps();
     }

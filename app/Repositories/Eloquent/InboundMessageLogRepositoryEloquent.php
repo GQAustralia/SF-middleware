@@ -34,7 +34,7 @@ class InboundMessageLogRepositoryEloquent extends RepositoryEloquent implements 
     /**
      * Insert Bulk
      *
-     * @param array $payload
+     * @param  array $payload
      * @return bool
      */
     public function insertBulk(array $payload)

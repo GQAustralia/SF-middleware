@@ -49,8 +49,9 @@ class InboundMessagesSyncService
 
     /**
      * InboundMessagesSync constructor.
-     * @param SQSClientService $sqs
-     * @param ActionRepositoryInterface $action
+     *
+     * @param SQSClientService                  $sqs
+     * @param ActionRepositoryInterface         $action
      * @param InboundMessageRepositoryInterface $message
      */
     public function __construct(
@@ -61,7 +62,6 @@ class InboundMessagesSyncService
         $this->sqs = $sqs;
         $this->action = $action;
         $this->message = $message;
-
     }
 
     /**
@@ -82,9 +82,11 @@ class InboundMessagesSyncService
         $this->insertBulkMessagesOrFail($messagesForInsert);
         $this->deleteAwsQueueMessages($queueUrl, $filteredMessages);
 
-        event(new InboundMessagesWasSynced(
-            collect($filteredMessages)->pluck('MessageId')->toArray()
-        ));
+        event(
+            new InboundMessagesWasSynced(
+                collect($filteredMessages)->pluck('MessageId')->toArray()
+            )
+        );
     }
 
     /**
@@ -223,18 +225,22 @@ class InboundMessagesSyncService
         $dateNow = date('Y-m-d');
 
         return collect($messages)
-            ->map(function ($message) use ($dateNow) {
-                return [
+            ->map(
+                function ($message) use ($dateNow) {
+                    return [
                     'message_id' => $message['MessageId'],
                     'action_id' => $this->getActionIdFromMessageContent($message['Body']),
                     'message_content' => $this->cleanMessageContentForInsert($message['Body']),
                     'completed' => 'N',
                     'create_at' => $dateNow,
                     'updated_at' => $dateNow
-                ];
-            })->reject(function ($message) {
-                return empty($message);
-            })->toArray();
+                    ];
+                }
+            )->reject(
+                function ($message) {
+                        return empty($message);
+                }
+            )->toArray();
     }
 
     /**
@@ -301,16 +307,18 @@ class InboundMessagesSyncService
 
     /**
      * @param string $queueUrl
-     * @param array $messages
+     * @param array  $messages
      * @throws QueuesMessageDeleteException
      */
     private function deleteAwsQueueMessages($queueUrl, $messages)
     {
         try {
             $receiptHandles = collect($messages)->pluck('ReceiptHandle')->toArray();
-            collect($receiptHandles)->each(function ($receiptHandle) use ($queueUrl) {
-                $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle]);
-            });
+            collect($receiptHandles)->each(
+                function ($receiptHandle) use ($queueUrl) {
+                    $this->sqs->client()->deleteMessage(['QueueUrl' => $queueUrl, 'ReceiptHandle' => $receiptHandle]);
+                }
+            );
         } // @codeCoverageIgnoreStart
         catch (SqsException $exception) {
             throw new QueuesMessageDeleteException($this->extractSQSMessage($exception->getMessage()));

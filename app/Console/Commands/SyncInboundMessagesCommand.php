@@ -79,5 +79,4 @@ class SyncInboundMessagesCommand extends Command
 
         $this->info($resultMessage);
     }
-
 }

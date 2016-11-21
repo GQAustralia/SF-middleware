@@ -39,6 +39,5 @@ class InboundMessageStatusResolver
         });
 
         return true;
-
     }
 }

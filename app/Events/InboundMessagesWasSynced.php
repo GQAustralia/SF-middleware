@@ -8,6 +8,7 @@ class InboundMessagesWasSynced extends Event
 
     /**
      * InboundMessagesWasSynced constructor.
+     *
      * @param array $messageIdList
      */
     public function __construct($messageIdList)

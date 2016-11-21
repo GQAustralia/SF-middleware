@@ -6,7 +6,6 @@
  */
 namespace App\Services;
 
-use App\OutboundMessage;
 use App\OutboundMessageLog;
 use App\Repositories\Contracts\OutboundMessageLogInterface;
 use Exception;
@@ -129,7 +128,7 @@ class OutboundSalesforceService
 
         switch ($operation) {
             case 'update':
-                $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
+                $objectId = $this->processUpdate($objectName, (object)$mappedData['fields']);
                 break;
             case 'updateornew':
                 if (empty($mappedData['fields']['Id']) || $mappedData['fields']['Id'] == false) {
@@ -139,9 +138,9 @@ class OutboundSalesforceService
                             $mappedData['fields'][$key] = $val;
                         }
                     }
-                    $objectId = $this->processInsert($objectName, (object) $mappedData['fields']);
+                    $objectId = $this->processInsert($objectName, (object)$mappedData['fields']);
                 } else {
-                    $objectId = $this->processUpdate($objectName, (object) $mappedData['fields']);
+                    $objectId = $this->processUpdate($objectName, (object)$mappedData['fields']);
                 }
                 //var_dump($objectId);
                 //var_dump($mappedData['fields']);
@@ -155,7 +154,6 @@ class OutboundSalesforceService
         }
 
         if (!empty($message['parents']) && $objectId && !empty($message['parentfields'])) {
-            
             $foreignKeysArray = $this->processFetch($objectName, ["Id" => $objectId], $message['parentfields']);
             if ($foreignKeysArray !== false) {
                 $foreignKeys = $foreignKeysArray[0];
@@ -269,8 +267,8 @@ class OutboundSalesforceService
             $relations = $map['relations'];
             $salesForceObject = new \stdClass();
             foreach ($defaults as $val => $default) {
-                $salesForceObject->$default = (array_search($default, $data) !== false) ? $data[array_search($default,
-                    $data)] : $val;
+                $salesForceObject->$default =
+                    (array_search($default, $data) !== false) ? $data[array_search($default, $data)] : $val;
             }
             foreach ($parents as $parent) {
                 $parentResponse = $this->processParentFetch($parent, $data);
@@ -326,10 +324,10 @@ class OutboundSalesforceService
             }
         }
         switch ($curd) {
-            case 'fetch' :
+            case 'fetch':
                 return $this->processFetch($objectName, $cond, $select = 'all');
                 break;
-            case 'updnew' :
+            case 'updnew':
                 if ((!isset($salesForceObject->Id)) || $salesForceObject->Id == false) {
                     if (isset($salesForceObject->Id)) {
                         unset($salesForceObject->Id);
@@ -339,7 +337,7 @@ class OutboundSalesforceService
                     return $this->processUpdate($objectName, $salesForceObject);
                 }
                 break;
-            case 'upd' :
+            case 'upd':
                 return $this->processUpdate($objectName, $salesForceObject);
                 break;
         }
@@ -401,9 +399,9 @@ class OutboundSalesforceService
 
     /**
      * @param $objectName
-     * @param $cond
+     * @param $condition
      * @param string $select
-     *
+     * @return bool
      */
     private function processFetch($objectName, $condition, $select = 'Id')
     {
@@ -414,7 +412,7 @@ class OutboundSalesforceService
         if (is_array($select)) {
             $select = implode(",", $select);
         }
-        
+
         try {
             $query = 'SELECT ' . $select . ' from ' . $objectName . ' WHERE ' . $condition;
             $response = Salesforce::query(($query));

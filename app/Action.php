@@ -20,7 +20,7 @@ class Action extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function inbound_message()
+    public function inboundMessage()
     {
         return $this->hasMany(InboundMessage::class);
     }
