@@ -19,6 +19,12 @@ class RepositoryEloquentTest extends BaseTestCase
     }
 
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_returns_model_on_create()
     {
         $repository = Mockery::mock(RepositoryEloquent::class)

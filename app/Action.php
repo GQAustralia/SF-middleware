@@ -16,13 +16,13 @@ class Action extends Model
     protected $fillable = ['name'];
 
     /**
-     * An ACtion has many message.
+     * An Action has many Inbound Messages.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function message()
+    public function inbound_message()
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(InboundMessage::class);
     }
 
     /**

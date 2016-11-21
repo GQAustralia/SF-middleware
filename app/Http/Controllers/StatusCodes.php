@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers;
 
+/**
+ * Interface StatusCodes
+ *
+ * @package App\Http\Controllers
+ */
 interface StatusCodes
 {
     const SUCCESS_STATUS_CODE = 200;

@@ -3,6 +3,12 @@
 class ExampleResponseControllerTest extends BaseTestCase
 {
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_returns_valid_response()
     {
         $this->post('example-response/success');
