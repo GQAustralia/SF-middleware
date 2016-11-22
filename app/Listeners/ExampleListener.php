@@ -3,7 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\ExampleEvent;
-use App\Message;
+use App\InboundMessage;
 
 /**
  * @codeCoverageIgnore
@@ -15,7 +15,7 @@ class ExampleListener
      */
     public function __construct()
     {
-
+        //
     }
 
     /**
@@ -26,6 +26,6 @@ class ExampleListener
      */
     public function handle(ExampleEvent $event)
     {
-        factory(Message::class)->create(['queue_id' => 1, 'message_content' => 'jemjemjem']);
+        factory(InboundMessage::class)->create(['queue_id' => 1, 'message_content' => 'jemjemjem']);
     }
 }

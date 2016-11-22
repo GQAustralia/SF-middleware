@@ -17,6 +17,12 @@ class SubscriberRepositoryEloquentTest extends BaseTestCase
     }
 
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_returns_subscriber_on_model_assign()
     {
         $repository = new SubscriberRepositoryEloquent(new Subscriber());

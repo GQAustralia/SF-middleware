@@ -1,30 +1,35 @@
 <?php
 
 use App\Action;
-use App\Message;
+use App\InboundMessage;
 use App\Subscriber;
 
-class ActionTest extends TestCase
+class ActionTest extends BaseTestCase
 {
-
     /** @test */
-    public function it_has_many_message()
+    public function locateTest()
     {
-        $model = Mockery::mock('App\Action[hasMany]');
-
-        $model->shouldReceive('hasMany')->with(Message::class)->andReturn(true);
-
-        $this->assertTrue($model->message());
+        $this->runningTestFor(get_class($this));
     }
 
     /** @test */
-    public function it_returns_message_on_calling_on_a_has_many_message_relationship()
+    public function it_has_many_inbound_message()
+    {
+        $model = Mockery::mock('App\Action[hasMany]');
+
+        $model->shouldReceive('hasMany')->with(InboundMessage::class)->andReturn(true);
+
+        $this->assertTrue($model->inboundMessage());
+    }
+
+    /** @test */
+    public function it_returns_message_on_calling_on_a_has_many_inbound_message_relationship()
     {
         $action = factory(Action::class)->create();
-        $message = factory(Message::class, 3)->create(['action_id' => $action->id]);
+        $message = factory(InboundMessage::class, 3)->create(['action_id' => $action->id]);
 
-        $this->assertInstanceOf(Message::class, $action->message[0]);
-        $this->assertEquals(3, count($action->message));
+        $this->assertInstanceOf(InboundMessage::class, $action->inboundMessage[0]);
+        $this->assertEquals(3, count($action->inboundMessage));
     }
 
     /** @test */

@@ -1,6 +1,6 @@
 <?php
 
-use App\Message;
+use App\InboundMessage;
 use App\Resolvers\DifferMessageInputDataToDatabase;
 
 class DifferMessageInputDataToDatabaseTest extends BaseTestCase
@@ -8,9 +8,15 @@ class DifferMessageInputDataToDatabaseTest extends BaseTestCase
     use DifferMessageInputDataToDatabase;
 
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_returns_non_duplicate_message_id()
     {
-        $message = factory(Message::class)->create(['created_at' => date('Y-m-d')]);
+        $message = factory(InboundMessage::class)->create(['created_at' => date('Y-m-d')]);
 
         $filteredMessageIdList = $this->computeDifference([
             $message->message_id,

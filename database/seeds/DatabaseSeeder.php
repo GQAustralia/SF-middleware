@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
+    const HOST = 'http://52.65.121.177/';
+
     /**
      * Run the database seeds.
      *
@@ -38,25 +40,25 @@ class DatabaseSeeder extends Seeder
         return [
             [
                 'platform_name' => 'facilitator-performance',
-                'url' => 'http://52.65.121.177/facilitator-performance/queue_message_receiver_handler.php',
+                'url' => self::HOST . 'facilitator-performance/queue_message_receiver_handler.php',
                 'created_at' => $date,
                 'updated_at' => $date
             ],
             [
                 'platform_name' => 'qualification-platform',
-                'url' => 'http://52.65.121.177/qualification-platform/queue_message_receiver_handler.php',
+                'url' => self::HOST . 'qualification-platform/queue_message_receiver_handler.php',
                 'created_at' => $date,
                 'updated_at' => $date
             ],
             [
                 'platform_name' => 'sales-performance',
-                'url' => 'http://52.65.121.177/sales-performance/queue_message_receiver_handler.php',
+                'url' => self::HOST . 'sales-performance/queue_message_receiver_handler.php',
                 'created_at' => $date,
                 'updated_at' => $date
             ],
             [
                 'platform_name' => 'transaction-system-cba',
-                'url' => 'http://52.65.121.177/transaction-system-cba/queue_message_receiver_handler.php',
+                'url' => self::HOST . 'transaction-system-cba/queue_message_receiver_handler.php',
                 'created_at' => $date,
                 'updated_at' => $date
             ]
@@ -68,7 +70,7 @@ class DatabaseSeeder extends Seeder
      */
     public function getFacilitators()
     {
-        return ['rto_performance', 'changed', 'submitted'];
+        return ['rto_performance', 'log', 'submitted'];
     }
 
     /**

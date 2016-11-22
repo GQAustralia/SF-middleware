@@ -17,6 +17,12 @@ class ActionRepositoryEloquentTest extends BaseTestCase
     }
 
     /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
+    /** @test */
     public function it_returns_queue_on_model_assign()
     {
         $repository = new ActionRepositoryEloquent(new Action());

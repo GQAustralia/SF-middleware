@@ -1,11 +1,17 @@
 <?php
 
 use App\Action;
-use App\Message;
+use App\InboundMessage;
 use App\Subscriber;
 
-class SubscriberTest extends TestCase
+class SubscriberTest extends BaseTestCase
 {
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
+    }
+
     /** @test */
     public function it_belongs_to_many_action()
     {
@@ -29,7 +35,7 @@ class SubscriberTest extends TestCase
     }
 
     /** @test */
-    public function it_belongs_to_many_message()
+    public function it_belongs_to_many_inbound_message()
     {
         $model = Mockery::mock('App\Subscriber[belongsToMany]');
 
@@ -44,10 +50,10 @@ class SubscriberTest extends TestCase
     public function it_returns_message_on_calling_on_a_many_to_many_message_relationship()
     {
         $subscriber = factory(Subscriber::class)->create();
-        $message = factory(Message::class)->create();
+        $inboundMessage = factory(InboundMessage::class)->create();
 
-        $subscriber->message()->attach([$message->id => ['status' => 'sent']]);
+        $subscriber->inboundMessage()->attach([$inboundMessage->id => ['status' => 'sent']]);
 
-        $this->assertInstanceOf(Message::class, $subscriber->message[0]);
+        $this->assertInstanceOf(InboundMessage::class, $subscriber->inboundMessage[0]);
     }
 }

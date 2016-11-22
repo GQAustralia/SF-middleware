@@ -1,7 +1,7 @@
 <?php
 
 use App\Action;
-use App\Message;
+use App\InboundMessage;
 use App\Services\SQSClientService;
 use App\Subscriber;
 use Aws\Sqs\Exception\SqsException;
@@ -17,6 +17,12 @@ class SyncInboundMessagesCommandTest extends BaseTestCase
         $this->setConnection('test_mysql_database');
 
         $this->sqs = new SQSClientService();
+    }
+
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
     }
 
     /**
@@ -102,7 +108,7 @@ class SyncInboundMessagesCommandTest extends BaseTestCase
         $actionUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
 
         while ($availableMessage = $this->getAQueueMessage($actionUrl, 30)) {
-            factory(\App\Message::class)->create([
+            factory(\App\InboundMessage::class)->create([
                 'message_id' => $availableMessage['MessageId'],
                 'action_id' => $action->id,
                 'message_content' => $availableMessage['Body'],
@@ -127,7 +133,7 @@ class SyncInboundMessagesCommandTest extends BaseTestCase
 
         factory(Action::class)->create(['name' => 'changed']);
 
-        Schema::table('message', function ($table) {
+        Schema::table('inbound_message', function ($table) {
             $table->dropColumn('message_id');
         });
 
@@ -140,7 +146,7 @@ class SyncInboundMessagesCommandTest extends BaseTestCase
     public function it_returns_a_valid_message_on_successful_sync()
     {
         $action = factory(Action::class)->create(['name' => 'changed']);
-        $message = factory(Message::class)->create([
+        $message = factory(InboundMessage::class)->create([
             'action_id' => $action->id,
             'message_content' => $this->SAMPLE_SALESFORCE_TO_SQS_MESSAGE()
         ]);
@@ -168,7 +174,7 @@ class SyncInboundMessagesCommandTest extends BaseTestCase
      */
     public function RESET_SQS()
     {
-        echo PHP_EOL . 'DELETING QUEUES CREATED FROM THIS TEST....' . PHP_EOL;
+        $this->printAlertMessageOnCLI('DELETING SAMPLE QUEUES CREATED FROM ' . get_class($this));
 
         $queueUrl = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_SAMPLE()])->get('QueueUrl');
         $queueURLWithNoMessages = $this->sqs->client()->getQueueUrl(['QueueName' => $this->QUEUE_NAME_WITH_NO_MESSAGES_SAMPLE()])->get('QueueUrl');
@@ -193,14 +199,5 @@ class SyncInboundMessagesCommandTest extends BaseTestCase
             ->get('Messages');
 
         return array_first($message);
-    }
-
-    /**
-     * @param string $message
-     * @return string
-     */
-    private function trimMessage($message)
-    {
-        return trim($message);
     }
 }

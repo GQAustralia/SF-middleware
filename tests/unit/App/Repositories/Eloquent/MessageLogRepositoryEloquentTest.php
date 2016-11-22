@@ -1,7 +1,7 @@
 <?php
 
-use App\MessageLog;
-use App\Repositories\Eloquent\MessageLogRepositoryEloquent;
+use App\InboundMessageLog;
+use App\Repositories\Eloquent\InboundMessageLogRepositoryEloquent;
 
 class MessageLogRepositoryEloquentTest extends BaseTestCase
 {
@@ -11,7 +11,13 @@ class MessageLogRepositoryEloquentTest extends BaseTestCase
     {
         parent::setUp();
 
-        $this->repository = $this->app->make(MessageLogRepositoryEloquent::class);
+        $this->repository = $this->app->make(InboundMessageLogRepositoryEloquent::class);
+    }
+
+    /** @test */
+    public function locateTest()
+    {
+        $this->runningTestFor(get_class($this));
     }
 
     /** @test */
@@ -19,13 +25,13 @@ class MessageLogRepositoryEloquentTest extends BaseTestCase
     {
         $dateNow = date('Y-m-d');
 
-        $input = factory(MessageLog::class, 3)->make(['created_at' => $dateNow, 'updated_at' => $dateNow]);
+        $input = factory(InboundMessageLog::class, 3)->make(['created_at' => $dateNow, 'updated_at' => $dateNow]);
 
         $result = $this->repository->insertBulk($input->toArray());
 
-        $this->assertEquals(3, MessageLog::all()->count());
+        $this->assertEquals(3, InboundMessageLog::all()->count());
         $this->assertEquals(1, $result);
-        $this->assertMultipleSeeInDatabase('message_log', $input->toArray());
+        $this->assertMultipleSeeInDatabase('inbound_message_log', $input->toArray());
     }
 
     /** @test */

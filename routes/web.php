@@ -26,9 +26,9 @@ $app->group(['prefix' => 'example-response', 'namespace' => 'App\Http\Controller
         'uses' => 'ExampleResponseController@failed'
     ]);
 
-    $app->post('form_params', [
-        'as' => 'example-response/form_params',
-        'uses' => 'ExampleResponseController@form_params'
+    $app->post('formparams', [
+        'as' => 'example-response/formparams',
+        'uses' => 'ExampleResponseController@formParams'
     ]);
 });
 

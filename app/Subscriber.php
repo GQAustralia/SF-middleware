@@ -26,12 +26,12 @@ class Subscriber extends Model
     }
 
     /**
-     * A Subscriber belongs to many Message.
+     * A Subscriber belongs to many Inbound Message.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function message()
+    public function inboundMessage()
     {
-        return $this->belongsToMany(Message::class, 'sent_message')->withPivot('status')->withTimestamps();
+        return $this->belongsToMany(InboundMessage::class, 'inbound_sent_message')->withPivot('status')->withTimestamps();
     }
 }

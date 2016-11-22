@@ -5,7 +5,7 @@ use App\Exceptions\DatabaseAlreadySyncedException;
 use App\Exceptions\InsertIgnoreBulkException;
 use App\Exceptions\NoMessagesToSyncException;
 use App\Exceptions\NoValidMessagesFromQueueException;
-use App\Services\InboundMessagesSync;
+use App\Services\InboundMessagesSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
 use Laravel\Lumen\Routing\ProvidesConvenienceMethods;
@@ -32,15 +32,15 @@ class SyncInboundMessagesCommand extends Command
     protected $description = 'Sync Inbound AWS Messages';
 
     /**
-     * @var InboundMessagesSync
+     * @var InboundMessagesSyncService
      */
     private $inbound;
 
     /**
      * SyncSQSMessagesCommand constructor.
-     * @param InboundMessagesSync $inbound
+     * @param InboundMessagesSyncService $inbound
      */
-    public function __construct(InboundMessagesSync $inbound)
+    public function __construct(InboundMessagesSyncService $inbound)
     {
         parent::__construct();
 
@@ -79,5 +79,4 @@ class SyncInboundMessagesCommand extends Command
 
         $this->info($resultMessage);
     }
-
 }
